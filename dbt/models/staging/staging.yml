@@ -1,0 +1,52 @@
+version: 2
+
+models:
+  - name: stg_complaints
+    description: One row per CFPB complaint with typed columns, bureau/other segment and outcome flags.
+    columns:
+      - name: complaint_id
+        data_tests: [unique, not_null]
+      - name: date_received
+        data_tests: [not_null]
+      - name: company
+        data_tests: [not_null]
+      - name: segment
+        description: "'bureau' for TransUnion, Experian and Equifax; 'other' for everyone else."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [bureau, other]
+      - name: relief_given
+        description: True when the company gave monetary or non-monetary relief; NULL while in progress.
+      - name: row_hash
+        data_tests: [not_null]
+
+unit_tests:
+  - name: relief_given_maps_historical_responses
+    model: stg_complaints
+    given:
+      - input: source('lake', 'complaints_archive')
+        format: sql
+        rows: |
+          select 1::bigint as complaint_id, date '2024-01-01' as date_received, null::varchar as product, null::varchar as sub_product, null::varchar as issue, null::varchar as sub_issue, null::varchar as narrative, null::varchar as company_public_response, 'A' as company, null::varchar as state, null::varchar as zip_code, null::varchar as tags, null::varchar as submitted_via, date '2024-01-02' as date_sent_to_company, 'Closed with relief' as company_response, 'Yes' as timely_response, 'h' as row_hash, null::varchar as source_file
+          union all
+          select 2::bigint as complaint_id, date '2024-01-01' as date_received, null::varchar as product, null::varchar as sub_product, null::varchar as issue, null::varchar as sub_issue, null::varchar as narrative, null::varchar as company_public_response, 'A' as company, null::varchar as state, null::varchar as zip_code, null::varchar as tags, null::varchar as submitted_via, date '2024-01-02' as date_sent_to_company, 'Closed' as company_response, 'Yes' as timely_response, 'h' as row_hash, null::varchar as source_file
+          union all
+          select 3::bigint as complaint_id, date '2024-01-01' as date_received, null::varchar as product, null::varchar as sub_product, null::varchar as issue, null::varchar as sub_issue, null::varchar as narrative, null::varchar as company_public_response, 'A' as company, null::varchar as state, null::varchar as zip_code, null::varchar as tags, null::varchar as submitted_via, date '2024-01-02' as date_sent_to_company, 'In progress' as company_response, 'Yes' as timely_response, 'h' as row_hash, null::varchar as source_file
+          union all
+          select 4::bigint as complaint_id, date '2024-01-01' as date_received, null::varchar as product, null::varchar as sub_product, null::varchar as issue, null::varchar as sub_issue, null::varchar as narrative, null::varchar as company_public_response, 'A' as company, null::varchar as state, null::varchar as zip_code, null::varchar as tags, null::varchar as submitted_via, date '2024-01-02' as date_sent_to_company, null::varchar as company_response, 'Yes' as timely_response, 'h' as row_hash, null::varchar as source_file
+          union all
+          select 5::bigint as complaint_id, date '2024-01-01' as date_received, null::varchar as product, null::varchar as sub_product, null::varchar as issue, null::varchar as sub_issue, null::varchar as narrative, null::varchar as company_public_response, 'A' as company, null::varchar as state, null::varchar as zip_code, null::varchar as tags, null::varchar as submitted_via, date '2024-01-02' as date_sent_to_company, 'Closed with non-monetary relief' as company_response, 'Yes' as timely_response, 'h' as row_hash, null::varchar as source_file
+          union all
+          select 6::bigint as complaint_id, date '2024-01-01' as date_received, null::varchar as product, null::varchar as sub_product, null::varchar as issue, null::varchar as sub_issue, null::varchar as narrative, null::varchar as company_public_response, 'EQUIFAX, INC.' as company, null::varchar as state, null::varchar as zip_code, null::varchar as tags, null::varchar as submitted_via, date '2024-01-02' as date_sent_to_company, 'Closed with explanation' as company_response, 'Yes' as timely_response, 'h' as row_hash, null::varchar as source_file
+      - input: ref('bureau_companies')
+        rows:
+          - {company: "EQUIFAX, INC."}
+    expect:
+      rows:
+        - {complaint_id: 1, relief_given: true, segment: other}
+        - {complaint_id: 2, relief_given: false, segment: other}
+        - {complaint_id: 3, relief_given: null, segment: other}
+        - {complaint_id: 4, relief_given: null, segment: other}
+        - {complaint_id: 5, relief_given: true, segment: other}
+        - {complaint_id: 6, relief_given: false, segment: bureau}

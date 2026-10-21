@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: int_narrative_templates
+    description: Exact-duplicate narratives (2+ copies) with how many companies and dates they span.
+    columns:
+      - name: narrative_hash
+        data_tests: [unique, not_null]
+      - name: n_copies
+        data_tests: [not_null]

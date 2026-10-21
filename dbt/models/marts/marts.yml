@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: fct_complaints_daily
+    description: Complaint counts per day, segment, company, product and issue.
+    columns:
+      - name: date_received
+        data_tests: [not_null]
+      - name: n_complaints
+        data_tests: [not_null]
+  - name: dim_company
+    description: One row per company with first/last complaint dates and total volume.
+    columns:
+      - name: company
+        data_tests: [unique, not_null]

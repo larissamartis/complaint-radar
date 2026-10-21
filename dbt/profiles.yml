@@ -1,0 +1,10 @@
+complaint_radar:
+  target: local
+  outputs:
+    local:
+      type: duckdb
+      path: "{{ env_var('CR_DUCKDB_PATH') }}"
+      threads: 4
+      settings:
+        memory_limit: "6GB"
+        preserve_insertion_order: false
