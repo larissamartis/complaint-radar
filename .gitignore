@@ -20,3 +20,4 @@ dbt/dbt_packages/
 .env
 *.json.key
 gcp-*.json
+!tests/fixtures/**
