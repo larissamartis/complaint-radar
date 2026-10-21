@@ -23,3 +23,11 @@ def archive_parquet_dir() -> Path:
 
 def duckdb_path() -> Path:
     return lake_dir() / "complaint_radar.duckdb"
+
+
+def snapshot_dir() -> Path:
+    return data_root() / "raw" / "snapshots"
+
+
+def snapshot_parquet_dir() -> Path:
+    return lake_dir() / "snapshots"

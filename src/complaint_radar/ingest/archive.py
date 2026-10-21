@@ -3,14 +3,12 @@
 import logging
 import shutil
 import tempfile
-import time
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import requests
-
 from complaint_radar.contracts.checker import check_parquet, load_contract
+from complaint_radar.ingest.http import download
 from complaint_radar.ingest.normalize import normalize_csv
 
 log = logging.getLogger(__name__)
@@ -57,41 +55,14 @@ class BackfillReport:
 def download_archive(
     dest: Path,
     names: tuple[str, ...] = ARCHIVE_FILES,
-    session: requests.Session | None = None,
+    session=None,
     retries: int = 3,
     backoff: float = 5.0,
 ) -> list[Path]:
     """Download archive zips into `dest`, skipping files already complete. Returns local paths."""
-    session = session or requests.Session()
-    dest.mkdir(parents=True, exist_ok=True)
-    paths = []
-    for name in names:
-        url, target = f"{ARCHIVE_BASE_URL}{name}.zip", dest / f"{name}.zip"
-        expected = int(session.head(url, timeout=60).headers["Content-Length"])
-        if target.exists() and target.stat().st_size == expected:
-            log.info("skip %s (complete)", name)
-            paths.append(target)
-            continue
-        part = target.with_suffix(".part")
-        for attempt in range(1, retries + 1):
-            try:
-                with session.get(url, stream=True, timeout=120) as resp:
-                    resp.raise_for_status()
-                    with part.open("wb") as f:
-                        for chunk in resp.iter_content(chunk_size=1 << 20):
-                            f.write(chunk)
-                if part.stat().st_size != expected:
-                    raise OSError(f"size mismatch for {name}: {part.stat().st_size} != {expected}")
-                part.replace(target)
-                break
-            except (OSError, requests.RequestException, ConnectionError) as exc:
-                part.unlink(missing_ok=True)
-                if attempt == retries:
-                    raise
-                log.warning("download %s failed (%s); retry %d/%d", name, exc, attempt, retries)
-                time.sleep(backoff * attempt)
-        paths.append(target)
-    return paths
+    return [
+        download(f"{ARCHIVE_BASE_URL}{name}.zip", dest / f"{name}.zip", session, retries, backoff) for name in names
+    ]
 
 
 def backfill_archive(raw_dir: Path, out_dir: Path, contract_path: Path) -> BackfillReport:
