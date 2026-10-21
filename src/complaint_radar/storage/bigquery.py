@@ -18,7 +18,7 @@ LOCATION = "US"
 # Sandbox tables expire 60 days after creation. Pushing expiry forward on every run keeps the tables alive;
 # old *partitions* still expire after 60 days, which is exactly the rolling hot window we want.
 TABLE_KEEPALIVE_DAYS = 59
-TABLES = ("raw_complaint_versions", "pipeline_runs")
+TABLES = ("raw_complaint_versions", "pipeline_runs", "alerts")
 
 _STRING_COLUMNS = (
     "product",
@@ -77,6 +77,28 @@ PIPELINE_RUNS_SCHEMA = [
 ]
 
 
+ALERTS_ARROW = pa.schema(
+    [
+        ("alert_id", pa.string()),
+        ("as_of", pa.date32()),
+        ("week_start", pa.date32()),
+        ("segment", pa.string()),
+        ("company", pa.string()),
+        ("product", pa.string()),
+        ("issue", pa.string()),
+        ("detector", pa.string()),
+        ("threshold", pa.float64()),
+        ("n", pa.int64()),
+        ("expected", pa.float64()),
+        ("score", pa.float64()),
+        ("run_id", pa.string()),
+        ("created_at", pa.timestamp("us", tz="UTC")),
+    ]
+)
+_BQ_TYPES = {pa.string(): "STRING", pa.date32(): "DATE", pa.float64(): "FLOAT64", pa.int64(): "INT64"}
+ALERTS_SCHEMA = [bigquery.SchemaField(f.name, _BQ_TYPES.get(f.type, "TIMESTAMP")) for f in ALERTS_ARROW]
+
+
 class BigQueryWarehouse:
     def __init__(self, client, project: str, dataset: str = DATASET):
         self.client, self.project, self.dataset = client, project, dataset
@@ -97,6 +119,10 @@ class BigQueryWarehouse:
         runs = bigquery.Table(self._table("pipeline_runs"), schema=PIPELINE_RUNS_SCHEMA)
         runs.time_partitioning = bigquery.TimePartitioning(field="as_of")
         self.client.create_table(runs, exists_ok=True)
+
+        alerts = bigquery.Table(self._table("alerts"), schema=ALERTS_SCHEMA)
+        alerts.time_partitioning = bigquery.TimePartitioning(field="week_start")
+        self.client.create_table(alerts, exists_ok=True)
         self.refresh_expiry()
 
     def refresh_expiry(self) -> None:
@@ -140,3 +166,15 @@ class BigQueryWarehouse:
         """
         rows = list(self.client.query(sql).result())
         return dict(rows[0].items()) if rows else None
+
+    def existing_alert_ids(self, week_start) -> set[str]:
+        sql = f"SELECT alert_id FROM `{self._table('alerts')}` WHERE week_start = '{week_start.isoformat()}'"
+        return {r["alert_id"] for r in self.client.query(sql).result()}
+
+    def load_alerts(self, alerts_df, as_of, run_id: str, created_at) -> int:
+        rows = alerts_df.assign(as_of=as_of, run_id=run_id, created_at=created_at).to_dict("records")
+        table = pa.Table.from_pylist(rows, schema=ALERTS_ARROW)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "alerts.parquet"
+            pq.write_table(table, path)
+            return self.load_parquet(path, "alerts")

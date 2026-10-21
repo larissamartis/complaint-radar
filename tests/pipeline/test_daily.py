@@ -17,6 +17,7 @@ class FakeWarehouse:
         self.loaded: list[Path] = []
         self.runs: list[dict] = []
         self.schema_calls = 0
+        self.alerts: list[dict] = []
 
     def ensure_schema(self):
         self.schema_calls += 1
@@ -43,6 +44,13 @@ class FakeWarehouse:
 
     def record_run(self, run: dict) -> None:
         self.runs.append(run)
+
+    def existing_alert_ids(self, week):
+        return {a["alert_id"] for a in self.alerts if a["week_start"] == week}
+
+    def load_alerts(self, df, as_of, run_id, created_at):
+        self.alerts.extend(df.to_dict("records"))
+        return len(df)
 
     def last_successful_run(self):
         ok = [r for r in self.runs if r["status"] in ("success", "no_new_data")]
@@ -150,3 +158,19 @@ def test_default_today_is_utc():
     from complaint_radar.pipeline.daily import utc_today
 
     assert utc_today() == datetime.now(UTC).date()
+
+
+def test_alerts_are_recorded_once_per_week(tmp_path, monkeypatch):
+    import pandas as pd
+
+    import complaint_radar.pipeline.daily as daily
+    from complaint_radar.detect.live import ALERT_COLUMNS, target_week
+
+    week = target_week(AS_OF)
+    fake = pd.DataFrame([dict.fromkeys(ALERT_COLUMNS, None) | {"alert_id": "a1", "week_start": week, "n": 60}])
+    monkeypatch.setattr(daily, "detect_current", lambda snapshot, as_of: fake)
+    deps, _, _ = make_deps(tmp_path)
+    first = run_daily(deps)
+    second = run_daily(deps, force=True)
+    assert [a["alert_id"] for a in deps.warehouse.alerts] == ["a1"]
+    assert "1 new" in first["message"] and "0 new" in second["message"]

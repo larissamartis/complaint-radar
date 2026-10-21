@@ -47,3 +47,11 @@ HASH_COLUMNS: tuple[str, ...] = tuple(
 )
 
 DATE_COLUMNS = frozenset({"date_received", "date_sent_to_company"})
+
+# The three nationwide credit bureaus get their own monitoring segment (about 90% of volume, mostly templates).
+# Must match dbt/seeds/bureau_companies.csv (a test checks this).
+BUREAU_COMPANIES: tuple[str, ...] = (
+    "TRANSUNION INTERMEDIATE HOLDINGS, INC.",
+    "Experian Information Solutions Inc.",
+    "EQUIFAX, INC.",
+)

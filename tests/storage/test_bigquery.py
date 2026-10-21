@@ -42,7 +42,8 @@ def test_ensure_schema_creates_partitioned_tables():
     BigQueryWarehouse(client, "proj").ensure_schema()
     assert client.datasets[0][0].dataset_id == "complaint_radar" and client.datasets[0][1]
     tables = {t.table_id: t for t, _ in client.tables}
-    assert set(tables) == {"raw_complaint_versions", "pipeline_runs"}
+    assert set(tables) == {"raw_complaint_versions", "pipeline_runs", "alerts"}
+    assert tables["alerts"].time_partitioning.field == "week_start"
     raw = tables["raw_complaint_versions"]
     assert raw.time_partitioning.field == "loaded_date"
     assert raw.clustering_fields == ["company"]
@@ -122,7 +123,7 @@ def test_ensure_schema_refreshes_table_expiry():
     # Sandbox tables expire 60 days after creation; each run pushes expiry forward so the history survives.
     client = QueryClient()
     BigQueryWarehouse(client, "proj").ensure_schema()
-    assert {t for t, f, e in client.updated} == {"raw_complaint_versions", "pipeline_runs"}
+    assert {t for t, f, e in client.updated} == {"raw_complaint_versions", "pipeline_runs", "alerts"}
     assert all(f == ["expires"] and e is not None for _, f, e in client.updated)
 
 

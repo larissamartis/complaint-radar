@@ -13,6 +13,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 
 from complaint_radar.contracts.checker import check_parquet, default_contract_path, load_contract
+from complaint_radar.detect.live import detect_current, target_week
 from complaint_radar.ingest.snapshot import snapshot_to_parquet
 from complaint_radar.pipeline.change_capture import select_changes
 
@@ -99,6 +100,15 @@ def run_daily(deps: Deps, as_of: date | None = None, window_days: int = HOT_WIND
 
         run["step"] = "dbt"
         deps.run_dbt()
+
+        run["step"] = "detect"
+        week = target_week(as_of)
+        found = detect_current(snapshot, as_of)
+        new = found[~found["alert_id"].isin(wh.existing_alert_ids(week))]
+        if len(new):
+            wh.load_alerts(new, as_of, run["run_id"], _now())
+        run["message"] = f"alerts for week {week}: {len(new)} new, {len(found)} total"
+        log.info(run["message"])
 
         run.update(status="success", step="done")
         return _finish(wh, run)
