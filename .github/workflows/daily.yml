@@ -27,10 +27,14 @@ jobs:
     timeout-minutes: 45
     env:
       CR_BQ_PROJECT: complaint-radar-512308
-      CR_DATA_DIR: ${{ runner.temp }}/data
-      GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
       PYTHONUTF8: "1"
     steps:
+      # The runner context is only available inside steps, so runner-temp paths are exported here.
+      - name: Set paths
+        run: |
+          echo "CR_DATA_DIR=$RUNNER_TEMP/data" >> "$GITHUB_ENV"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
