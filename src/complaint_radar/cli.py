@@ -1,7 +1,12 @@
 """Command-line entry point: `complaint-radar <command>`."""
 
 import logging
+import os
+import shutil
+import subprocess
 import time
+from datetime import date
+from pathlib import Path
 
 import typer
 
@@ -36,3 +41,66 @@ def backfill_archive_cmd() -> None:
         f"processed {len(report.processed)}, skipped {len(report.skipped)}, "
         f"rows {report.rows:,} in {time.time() - start:.0f}s"
     )
+
+
+def _deps():
+    from google.cloud import bigquery
+
+    from complaint_radar.ingest.snapshot import api_latest_date, fetch_snapshot
+    from complaint_radar.pipeline.daily import Deps
+    from complaint_radar.storage.bigquery import BigQueryWarehouse
+
+    project = os.environ.get("CR_BQ_PROJECT", "complaint-radar-512308")
+    dbt_dir = Path(os.environ.get("CR_DBT_DIR", "dbt"))
+
+    def run_dbt() -> None:
+        cmd = ["dbt", "build", "--project-dir", str(dbt_dir), "--profiles-dir", str(dbt_dir), "--target", "bigquery"]
+        subprocess.run(cmd, check=True)
+
+    return Deps(
+        api_latest_date=api_latest_date,
+        fetch_snapshot=fetch_snapshot,
+        warehouse=BigQueryWarehouse(bigquery.Client(project=project), project),
+        run_dbt=run_dbt,
+        workdir=config.data_root() / "work",
+    )
+
+
+def _cleanup(workdir: Path, run: dict, keep_snapshots: int = 2) -> None:
+    """Delete this run's scratch files on success and keep only the newest snapshot zips."""
+    if run["status"] == "success":
+        shutil.rmtree(workdir / run["run_id"], ignore_errors=True)
+    for old in sorted((workdir / "snapshots").glob("complaints_*.zip"))[:-keep_snapshots]:
+        old.unlink(missing_ok=True)
+
+
+def _report(run: dict) -> None:
+    typer.echo(
+        f"run {run['run_id']}: {run['status']} (step {run['step']}), rows loaded {run['rows_loaded']:,}, "
+        f"snapshot rows {run['snapshot_rows'] or 0:,}, API newest {run['api_latest_date']}"
+    )
+
+
+@app.command("run-daily")
+def run_daily_cmd(
+    as_of: str = typer.Option(None, help="Run date YYYY-MM-DD (default: today)"),
+    force: bool = typer.Option(False, help="Run even if the API shows no new data"),
+) -> None:
+    """Daily pipeline: pre-check, snapshot, contract, change capture, BigQuery load, dbt."""
+    from complaint_radar.pipeline.daily import run_daily
+
+    deps = _deps()
+    run = run_daily(deps, as_of=date.fromisoformat(as_of) if as_of else None, force=force)
+    _cleanup(deps.workdir, run)
+    _report(run)
+
+
+@app.command("backfill")
+def backfill_cmd(since: str = typer.Option(..., help="Re-capture complaints received since YYYY-MM-DD")) -> None:
+    """Re-capture recent complaints after an outage (idempotent; capped at the 60-day hot window)."""
+    from complaint_radar.pipeline.daily import backfill
+
+    deps = _deps()
+    run = backfill(deps, since=date.fromisoformat(since))
+    _cleanup(deps.workdir, run)
+    _report(run)

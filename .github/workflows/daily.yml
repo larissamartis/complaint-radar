@@ -1,0 +1,71 @@
+name: Daily pipeline
+
+on:
+  schedule:
+    # CFPB's bulk file is refreshed around 09:15 UTC; run after it (17:00 IST).
+    - cron: "30 11 * * *"
+  workflow_dispatch:
+    inputs:
+      as_of:
+        description: "Run date YYYY-MM-DD (blank = today)"
+        required: false
+      force:
+        description: "Run even if the CFPB API shows no new data"
+        type: boolean
+        default: false
+      backfill_since:
+        description: "Instead of a normal run, re-capture complaints received since YYYY-MM-DD"
+        required: false
+
+concurrency:
+  group: daily-pipeline
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CR_BQ_PROJECT: complaint-radar-512308
+      CR_DATA_DIR: ${{ runner.temp }}/data
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Write service-account key
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          if [ -z "$GCP_SA_KEY" ]; then echo "::error::GCP_SA_KEY secret is not set"; exit 1; fi
+          printf '%s' "$GCP_SA_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
+
+      - name: Run pipeline
+        env:
+          AS_OF: ${{ inputs.as_of }}
+          FORCE: ${{ inputs.force }}
+          BACKFILL_SINCE: ${{ inputs.backfill_since }}
+        run: |
+          if [ -n "$BACKFILL_SINCE" ]; then
+            uv run complaint-radar backfill --since "$BACKFILL_SINCE"
+          else
+            args=()
+            [ -n "$AS_OF" ] && args+=(--as-of "$AS_OF")
+            [ "$FORCE" = "true" ] && args+=(--force)
+            uv run complaint-radar run-daily "${args[@]}"
+          fi
+
+      - name: Remove key
+        if: always()
+        run: rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
