@@ -25,6 +25,12 @@ class FakeClient:
     def create_table(self, table, exists_ok=False):
         self.tables.append((table, exists_ok))
 
+    def get_table(self, ref):
+        return type("T", (), {"expires": None, "table_id": ref.split(".")[-1]})()
+
+    def update_table(self, table, fields):
+        return table
+
     def load_table_from_file(self, f, destination, job_config=None):
         data = f.read()
         self.loads.append((destination, job_config, data))
@@ -82,3 +88,47 @@ def test_schemas_have_no_required_fields():
     from complaint_radar.storage.bigquery import PIPELINE_RUNS_SCHEMA, RAW_VERSIONS_SCHEMA
 
     assert {f.mode for f in RAW_VERSIONS_SCHEMA + PIPELINE_RUNS_SCHEMA} == {"NULLABLE"}
+
+
+class QueryClient(FakeClient):
+    def __init__(self):
+        super().__init__()
+        self.sql, self.updated = [], []
+
+    def query(self, sql):
+        self.sql.append(sql)
+
+        class R:
+            def to_arrow(self_inner):
+                import pyarrow as pa
+
+                return pa.table({"complaint_id": pa.array([], pa.int64()), "row_hash": pa.array([], pa.string())})
+
+        return R()
+
+    def get_table(self, ref):
+        class T:
+            expires = None
+            table_id = ref.split(".")[-1]
+
+        return T()
+
+    def update_table(self, table, fields):
+        self.updated.append((table.table_id, fields, table.expires))
+        return table
+
+
+def test_ensure_schema_refreshes_table_expiry():
+    # Sandbox tables expire 60 days after creation; each run pushes expiry forward so the history survives.
+    client = QueryClient()
+    BigQueryWarehouse(client, "proj").ensure_schema()
+    assert {t for t, f, e in client.updated} == {"raw_complaint_versions", "pipeline_runs"}
+    assert all(f == ["expires"] and e is not None for _, f, e in client.updated)
+
+
+def test_existing_keys_are_latest_version_only(tmp_path):
+    # A -> B -> A must be captured as a new version, so compare against each complaint's latest version only.
+    client = QueryClient()
+    BigQueryWarehouse(client, "proj").export_existing_keys(tmp_path / "k.parquet")
+    sql = client.sql[0].lower()
+    assert "row_number()" in sql and "partition by complaint_id" in sql and "= 1" in sql

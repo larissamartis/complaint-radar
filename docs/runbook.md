@@ -71,7 +71,7 @@ The project uses the **BigQuery sandbox**:
   ```
   If storage is close to the limit, shorten `HOT_WINDOW_DAYS` in `pipeline/daily.py`.
 - **Query quota:** the daily job reads about 50 MB (the existing keys). It can only hit the quota through ad-hoc queries.
-- **A table has disappeared:** it expired after 60 days without being recreated. The next run recreates the tables (`ensure_schema`). Run a backfill (section 5) to repopulate the window.
+- **Table expiry:** sandbox tables expire 60 days after creation. Every run pushes both tables' expiry 59 days ahead (`refresh_expiry`), so they only disappear if the job has not run for about two months. In that case the next run recreates them and reloads the whole window automatically (about 400 MB of the lifetime allowance). No manual backfill is needed.
 
 ## 5. Backfill after an outage
 

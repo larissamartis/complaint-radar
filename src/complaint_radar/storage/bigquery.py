@@ -6,6 +6,7 @@ So every write is an append load job, and nothing creates scratch tables.
 """
 
 import tempfile
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pyarrow as pa
@@ -14,6 +15,10 @@ from google.cloud import bigquery
 
 DATASET = "complaint_radar"
 LOCATION = "US"
+# Sandbox tables expire 60 days after creation. Pushing expiry forward on every run keeps the tables alive;
+# old *partitions* still expire after 60 days, which is exactly the rolling hot window we want.
+TABLE_KEEPALIVE_DAYS = 59
+TABLES = ("raw_complaint_versions", "pipeline_runs")
 
 _STRING_COLUMNS = (
     "product",
@@ -92,9 +97,22 @@ class BigQueryWarehouse:
         runs = bigquery.Table(self._table("pipeline_runs"), schema=PIPELINE_RUNS_SCHEMA)
         runs.time_partitioning = bigquery.TimePartitioning(field="as_of")
         self.client.create_table(runs, exists_ok=True)
+        self.refresh_expiry()
+
+    def refresh_expiry(self) -> None:
+        expires = datetime.now(UTC) + timedelta(days=TABLE_KEEPALIVE_DAYS)
+        for name in TABLES:
+            table = self.client.get_table(self._table(name))
+            table.expires = expires
+            self.client.update_table(table, ["expires"])
 
     def export_existing_keys(self, out_path: Path) -> Path:
-        sql = f"SELECT complaint_id, row_hash FROM `{self._table('raw_complaint_versions')}`"
+        # Latest version per complaint only, so a status that reverts (A -> B -> A) is captured again.
+        # Ordering must match dbt's wh_complaints_current.
+        sql = f"""
+            SELECT complaint_id, row_hash FROM `{self._table("raw_complaint_versions")}`
+            QUALIFY row_number() OVER (PARTITION BY complaint_id ORDER BY loaded_date DESC, run_id DESC) = 1
+        """
         pq.write_table(self.client.query(sql).to_arrow(), out_path)
         return out_path
 

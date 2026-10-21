@@ -4,6 +4,12 @@ with versions as (
     select * from {{ ref('stg_wh_complaint_versions') }}
 ),
 
+-- Only complaints received inside the hot window. Older complaints whose status changed recently still
+-- have a newer version stored, but keeping only those would bias old dates towards changed outcomes.
+window_start as (
+    select date_sub(max(loaded_date), interval 60 day) as start_date from versions
+),
+
 bureaus as (
     select company from {{ ref('bureau_companies') }}
 )
@@ -19,5 +25,7 @@ select
         else false
     end as relief_given
 from versions as v
+cross join window_start as w
 left join bureaus as b on v.company = b.company
+where v.date_received >= w.start_date
 qualify row_number() over (partition by v.complaint_id order by v.loaded_date desc, v.run_id desc) = 1

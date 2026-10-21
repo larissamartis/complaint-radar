@@ -17,14 +17,15 @@ models:
     description: Complaint counts per day, segment, company, product and issue over the hot window.
 
 unit_tests:
-  - name: current_view_keeps_latest_version
+  - name: current_view_keeps_latest_version_inside_window
     model: wh_complaints_current
     given:
       - input: ref('stg_wh_complaint_versions')
         rows:
-          - {complaint_id: 1, company: "A", company_response: "In progress", loaded_date: "2026-10-01", run_id: "r1", row_hash: "a"}
-          - {complaint_id: 1, company: "A", company_response: "Closed with explanation", loaded_date: "2026-10-05", run_id: "r5", row_hash: "b"}
-          - {complaint_id: 2, company: "EQUIFAX, INC.", company_response: "Closed with monetary relief", loaded_date: "2026-10-05", run_id: "r5", row_hash: "c"}
+          - {complaint_id: 1, date_received: "2026-09-30", company: "A", company_response: "In progress", loaded_date: "2026-10-01", run_id: "r1", row_hash: "a"}
+          - {complaint_id: 1, date_received: "2026-09-30", company: "A", company_response: "Closed with explanation", loaded_date: "2026-10-05", run_id: "r5", row_hash: "b"}
+          - {complaint_id: 2, date_received: "2026-10-04", company: "EQUIFAX, INC.", company_response: "Closed with monetary relief", loaded_date: "2026-10-05", run_id: "r5", row_hash: "c"}
+          - {complaint_id: 3, date_received: "2026-07-01", company: "A", company_response: "Closed with relief", loaded_date: "2026-10-05", run_id: "r5", row_hash: "d"}
       - input: ref('bureau_companies')
         rows:
           - {company: "EQUIFAX, INC."}

@@ -51,7 +51,7 @@ def _deps():
     from complaint_radar.storage.bigquery import BigQueryWarehouse
 
     project = os.environ.get("CR_BQ_PROJECT", "complaint-radar-512308")
-    dbt_dir = Path(os.environ.get("CR_DBT_DIR", "dbt"))
+    dbt_dir = Path(os.environ.get("CR_DBT_DIR", Path(__file__).resolve().parents[2] / "dbt"))
 
     def run_dbt() -> None:
         cmd = ["dbt", "build", "--project-dir", str(dbt_dir), "--profiles-dir", str(dbt_dir), "--target", "bigquery"]
@@ -82,15 +82,13 @@ def _report(run: dict) -> None:
 
 
 @app.command("run-daily")
-def run_daily_cmd(
-    as_of: str = typer.Option(None, help="Run date YYYY-MM-DD (default: today)"),
-    force: bool = typer.Option(False, help="Run even if the API shows no new data"),
-) -> None:
+def run_daily_cmd(force: bool = typer.Option(False, help="Run even if the API shows no new data")) -> None:
     """Daily pipeline: pre-check, snapshot, contract, change capture, BigQuery load, dbt."""
     from complaint_radar.pipeline.daily import run_daily
 
     deps = _deps()
-    run = run_daily(deps, as_of=date.fromisoformat(as_of) if as_of else None, force=force)
+    # Always today's (UTC) snapshot: CFPB only publishes the current file, so a past date cannot be replayed.
+    run = run_daily(deps, force=force)
     _cleanup(deps.workdir, run)
     _report(run)
 

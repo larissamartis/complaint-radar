@@ -21,6 +21,14 @@ log = logging.getLogger(__name__)
 HOT_WINDOW_DAYS = 60
 
 
+def _now() -> datetime:
+    return datetime.now(UTC)
+
+
+def utc_today() -> date:
+    return _now().date()
+
+
 @dataclass(frozen=True)
 class Deps:
     api_latest_date: Callable[[], date]
@@ -28,20 +36,18 @@ class Deps:
     warehouse: object
     run_dbt: Callable[[], None]
     workdir: Path
-    today: Callable[[], date] = date.today
-
-
-def _now() -> datetime:
-    return datetime.now(UTC)
+    today: Callable[[], date] = utc_today
 
 
 def run_daily(deps: Deps, as_of: date | None = None, window_days: int = HOT_WINDOW_DAYS, force: bool = False) -> dict:
     as_of = as_of or deps.today()
     wh = deps.warehouse
+    started = _now()
     run = {
-        "run_id": f"{as_of.isoformat()}-{uuid.uuid4().hex[:8]}",
+        # Sortable by start time: the current-state view breaks same-day ties on run_id.
+        "run_id": f"{started:%Y%m%dT%H%M%S%f}-{uuid.uuid4().hex[:6]}",
         "as_of": as_of,
-        "started_at": _now(),
+        "started_at": started,
         "finished_at": None,
         "status": "running",
         "step": "precheck",
@@ -56,6 +62,7 @@ def run_daily(deps: Deps, as_of: date | None = None, window_days: int = HOT_WIND
         run["api_latest_date"] = deps.api_latest_date()
         if not force and last and last.get("api_latest_date") and run["api_latest_date"] <= last["api_latest_date"]:
             run.update(status="no_new_data", step="done", snapshot_rows=last.get("snapshot_rows"))
+            run["api_latest_date"] = max(run["api_latest_date"], last["api_latest_date"])  # never lower the baseline
             run["message"] = f"API newest date {run['api_latest_date']} has not advanced since the last run"
             log.info(run["message"])
             return _finish(wh, run)

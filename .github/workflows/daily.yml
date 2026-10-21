@@ -6,9 +6,6 @@ on:
     - cron: "30 11 * * *"
   workflow_dispatch:
     inputs:
-      as_of:
-        description: "Run date YYYY-MM-DD (blank = today)"
-        required: false
       force:
         description: "Run even if the CFPB API shows no new data"
         type: boolean
@@ -35,6 +32,8 @@ jobs:
       PYTHONUTF8: "1"
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: astral-sh/setup-uv@v6
         with:
@@ -49,21 +48,22 @@ jobs:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: |
           if [ -z "$GCP_SA_KEY" ]; then echo "::error::GCP_SA_KEY secret is not set"; exit 1; fi
+          umask 077
           printf '%s' "$GCP_SA_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
 
       - name: Run pipeline
         env:
-          AS_OF: ${{ inputs.as_of }}
           FORCE: ${{ inputs.force }}
           BACKFILL_SINCE: ${{ inputs.backfill_since }}
         run: |
           if [ -n "$BACKFILL_SINCE" ]; then
             uv run complaint-radar backfill --since "$BACKFILL_SINCE"
           else
-            args=()
-            [ -n "$AS_OF" ] && args+=(--as-of "$AS_OF")
-            [ "$FORCE" = "true" ] && args+=(--force)
-            uv run complaint-radar run-daily "${args[@]}"
+            if [ "$FORCE" = "true" ]; then
+              uv run complaint-radar run-daily --force
+            else
+              uv run complaint-radar run-daily
+            fi
           fi
 
       - name: Remove key

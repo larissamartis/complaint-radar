@@ -127,3 +127,26 @@ def test_backfill_caps_window_at_60(tmp_path, caplog):
     run = backfill(deps, since=date(2024, 1, 1))
     assert run["status"] == "success"
     assert "capped" in caplog.text
+
+
+def test_run_ids_sort_in_time_order(tmp_path):
+    deps, _, _ = make_deps(tmp_path)
+    first = run_daily(deps)
+    second = run_daily(deps, force=True)
+    assert first["run_id"] < second["run_id"]
+
+
+def test_no_new_data_never_lowers_api_baseline(tmp_path):
+    deps, _, _ = make_deps(tmp_path)
+    run_daily(deps)
+    stale = replace(deps, api_latest_date=lambda: date(2025, 2, 18))  # API briefly returns an older date
+    run = run_daily(stale)
+    assert run["status"] == "no_new_data" and run["api_latest_date"] == date(2025, 2, 20)
+
+
+def test_default_today_is_utc():
+    from datetime import UTC, datetime
+
+    from complaint_radar.pipeline.daily import utc_today
+
+    assert utc_today() == datetime.now(UTC).date()
