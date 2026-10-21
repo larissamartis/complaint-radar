@@ -33,15 +33,9 @@ def normalize_csv(csv_path: Path, out_path: Path, source_file: str) -> int:
 
     renamed = ", ".join(f'"{h}" AS {COLUMN_MAP[h]}' for h in header)
     # Hash the trimmed raw text (before typing) so the value is stable across file formats.
-    hash_input = ", ".join(
-        f"COALESCE(NULLIF(TRIM({c}), ''), '')" if c in present else "''" for c in HASH_COLUMNS
-    )
-    typed = ", ".join(
-        _column_expr(c, present) for c in CANONICAL_COLUMNS if c not in {"row_hash", "source_file"}
-    )
-    select = ", ".join(
-        f"'{source_file}' AS source_file" if c == "source_file" else c for c in CANONICAL_COLUMNS
-    )
+    hash_input = ", ".join(f"COALESCE(NULLIF(TRIM({c}), ''), '')" if c in present else "''" for c in HASH_COLUMNS)
+    typed = ", ".join(_column_expr(c, present) for c in CANONICAL_COLUMNS if c not in {"row_hash", "source_file"})
+    select = ", ".join(f"'{source_file}' AS source_file" if c == "source_file" else c for c in CANONICAL_COLUMNS)
 
     tmp = out_path.with_suffix(".tmp")
     out_path.parent.mkdir(parents=True, exist_ok=True)

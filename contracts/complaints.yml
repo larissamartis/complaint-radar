@@ -1,0 +1,22 @@
+# Data contract for canonical complaint files (archive backfill and daily snapshot).
+# A file that breaks any rule is rejected before it reaches the lake or the warehouse.
+name: complaints
+required_columns: [complaint_id, date_received, product, issue, company, company_response, timely_response, row_hash]
+not_null: [complaint_id, date_received, product, company]
+unique: [complaint_id]
+accepted_values:
+  company_response:
+    - Closed with explanation
+    - Closed with non-monetary relief
+    - Closed with monetary relief
+    - Untimely response
+    - In progress
+    - Closed
+    - Closed with relief
+    - Closed without relief
+  timely_response: ["Yes", "No"]
+  submitted_via: [Web, Referral, Phone, Postal mail, Fax, Email]
+nullable_accepted: [company_response, submitted_via]
+date_range: {column: date_received, min: "2011-12-01"}
+freshness: {column: date_received, max_age_days: 3}
+row_count_change: {max_pct: 20}
