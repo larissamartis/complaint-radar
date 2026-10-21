@@ -74,3 +74,11 @@ def test_record_run_uses_load_job_not_insert_rows():
     )
     assert client.loads[0][0] == "proj.complaint_radar.pipeline_runs"
     assert client.loads[0][2][:4] == b"PAR1"  # parquet magic bytes
+
+
+def test_schemas_have_no_required_fields():
+    # Parquet columns are always nullable, and BigQuery rejects a nullable load into a REQUIRED field.
+    # Not-null rules are enforced upstream by the data contract instead.
+    from complaint_radar.storage.bigquery import PIPELINE_RUNS_SCHEMA, RAW_VERSIONS_SCHEMA
+
+    assert {f.mode for f in RAW_VERSIONS_SCHEMA + PIPELINE_RUNS_SCHEMA} == {"NULLABLE"}

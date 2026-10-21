@@ -32,15 +32,15 @@ _STRING_COLUMNS = (
 )
 
 RAW_VERSIONS_SCHEMA = [
-    bigquery.SchemaField("complaint_id", "INT64", mode="REQUIRED"),
-    bigquery.SchemaField("date_received", "DATE", mode="REQUIRED"),
+    bigquery.SchemaField("complaint_id", "INT64"),
+    bigquery.SchemaField("date_received", "DATE"),
     *[bigquery.SchemaField(c, "STRING") for c in _STRING_COLUMNS[:5]],
-    bigquery.SchemaField("company", "STRING", mode="REQUIRED"),
+    bigquery.SchemaField("company", "STRING"),
     *[bigquery.SchemaField(c, "STRING") for c in _STRING_COLUMNS[6:9]],
     bigquery.SchemaField("date_sent_to_company", "DATE"),
     *[bigquery.SchemaField(c, "STRING") for c in _STRING_COLUMNS[9:]],
-    bigquery.SchemaField("loaded_date", "DATE", mode="REQUIRED"),
-    bigquery.SchemaField("run_id", "STRING", mode="REQUIRED"),
+    bigquery.SchemaField("loaded_date", "DATE"),
+    bigquery.SchemaField("run_id", "STRING"),
 ]
 
 PIPELINE_RUNS_ARROW = pa.schema(
@@ -59,11 +59,11 @@ PIPELINE_RUNS_ARROW = pa.schema(
 )
 
 PIPELINE_RUNS_SCHEMA = [
-    bigquery.SchemaField("run_id", "STRING", mode="REQUIRED"),
-    bigquery.SchemaField("as_of", "DATE", mode="REQUIRED"),
+    bigquery.SchemaField("run_id", "STRING"),
+    bigquery.SchemaField("as_of", "DATE"),
     bigquery.SchemaField("started_at", "TIMESTAMP"),
     bigquery.SchemaField("finished_at", "TIMESTAMP"),
-    bigquery.SchemaField("status", "STRING", mode="REQUIRED"),
+    bigquery.SchemaField("status", "STRING"),
     bigquery.SchemaField("step", "STRING"),
     bigquery.SchemaField("rows_loaded", "INT64"),
     bigquery.SchemaField("snapshot_rows", "INT64"),
