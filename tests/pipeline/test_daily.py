@@ -1,6 +1,6 @@
 import zipfile
 from dataclasses import replace
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import duckdb
@@ -191,3 +191,18 @@ def test_vintage_recorded_once_per_day(tmp_path):
     run_daily(deps, force=True)
     assert n > 0 and len(deps.warehouse.vintages) == n
     assert {"as_of", "segment", "week_start", "age", "n_published"} <= set(deps.warehouse.vintages[0])
+
+
+def test_age_two_alerts_are_not_duplicated_on_later_days(tmp_path, monkeypatch):
+    import pandas as pd
+
+    import complaint_radar.pipeline.daily as daily
+    from complaint_radar.detect.live import ALERT_COLUMNS, target_week
+
+    older_week = target_week(AS_OF) - timedelta(weeks=1)
+    fake = pd.DataFrame([dict.fromkeys(ALERT_COLUMNS, None) | {"alert_id": "a2", "week_start": older_week}])
+    monkeypatch.setattr(daily, "detect_current", lambda snapshot, as_of: fake)
+    deps, _, _ = make_deps(tmp_path)
+    run_daily(deps)
+    run_daily(deps, force=True)
+    assert [a["alert_id"] for a in deps.warehouse.alerts] == ["a2"]

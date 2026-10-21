@@ -22,7 +22,8 @@ from complaint_radar.detect.detectors import BASELINE_WEEKS, MIN_BASELINE_MEAN, 
 from complaint_radar.schema import BUREAU_COMPANIES
 
 PRODUCTION_DETECTOR = "volume_rule"
-PRODUCTION_THRESHOLD = 1.75  # tuned on 2016-2021, see docs/results/phase3.md
+# Tuned per segment on 2016-2021 (docs/results/phase3.md, backtest.json).
+PRODUCTION_THRESHOLDS = {"other": 1.75, "bureau": 3.0}
 MATURE_AGE = 3  # weeks after which a week is treated as fully published
 SCORED_AGES = (1, 2)
 MIN_COMPLETENESS = 0.05
@@ -91,8 +92,8 @@ def _completeness(frame: pd.DataFrame) -> pd.DataFrame:
 
     Publication speed differs a lot by product (after one week: ~50% of debt-collection complaints are
     visible but ~7% of mortgage complaints), so one segment-wide figure would flood alerts from fast
-    products. Estimate = observed / baseline summed over the product's series, after dropping the 10% of
-    series with the highest ratio so that genuinely spiking series do not inflate it. Products with too
+    products. Estimate = observed / baseline summed over the product's series, after trimming the 10% of
+    series with the highest and lowest ratios so that genuinely spiking series do not inflate it. Products with too
     little volume fall back to the segment-wide estimate.
     """
 
@@ -101,7 +102,8 @@ def _completeness(frame: pd.DataFrame) -> pd.DataFrame:
         if part["baseline_mean"].sum() < MIN_PRODUCT_BASELINE:
             return None
         ratios = part[f"n_age{age}"].fillna(0) / part["baseline_mean"]
-        keep = part[ratios <= ratios.quantile(0.9)] if len(part) >= 5 else part
+        lo, hi = ratios.quantile(0.1), ratios.quantile(0.9)
+        keep = part[(ratios >= lo) & (ratios <= hi)] if len(part) >= 5 else part
         return float(keep[f"n_age{age}"].fillna(0).sum() / keep["baseline_mean"].sum())
 
     rows = []
@@ -132,8 +134,9 @@ def detect_current(
     snapshot_parquet: Path,
     as_of: date,
     detector: str = PRODUCTION_DETECTOR,
-    threshold: float = PRODUCTION_THRESHOLD,
+    thresholds: dict[str, float] | None = None,
 ) -> pd.DataFrame:
+    thresholds = thresholds or PRODUCTION_THRESHOLDS
     frame = _series_frame(snapshot_parquet, as_of)
     if frame.empty:
         return pd.DataFrame(columns=ALERT_COLUMNS)
@@ -150,16 +153,17 @@ def detect_current(
         ]
         part["expected"] = part["baseline_mean"] * part["completeness"]
         part["score"] = part["n"] / part["expected"]
+        part["threshold"] = part["segment"].map(thresholds)
         ok = (
             (part["baseline_mean"] >= MIN_BASELINE_MEAN)
             & (part["n"] >= MIN_COUNT)
             & (part["n"] >= MIN_RATIO * part["expected"])
-            & (part["score"] >= threshold)
+            & (part["score"] >= part["threshold"])
             & (part["completeness"] >= MIN_SCORED_COMPLETENESS)
         )
         found.append(part[ok])
     out = pd.concat(found, ignore_index=True)
-    out["detector"], out["threshold"] = detector, threshold
+    out["detector"] = detector
     out["alert_id"] = [
         alert_id(r.week_start, r.segment, r.company, r.product, r.issue, detector) for r in out.itertuples()
     ]

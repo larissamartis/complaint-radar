@@ -108,7 +108,9 @@ def run_daily(deps: Deps, as_of: date | None = None, window_days: int = HOT_WIND
         run["step"] = "detect"
         week = target_week(as_of)
         found = detect_current(snapshot, as_of)
-        new = found[~found["alert_id"].isin(wh.existing_alert_ids(week))]
+        scored_weeks = sorted({w for w in found["week_start"]} | {week})
+        known = set().union(*(wh.existing_alert_ids(w) for w in scored_weeks))
+        new = found[~found["alert_id"].isin(known)]
         if len(new):
             wh.load_alerts(new, as_of, run["run_id"], _now())
         run["message"] = f"alerts for week {week}: {len(new)} new, {len(found)} total"

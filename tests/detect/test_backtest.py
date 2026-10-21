@@ -48,3 +48,20 @@ def test_isolated_spike_is_false_alarm_and_late_alert_is_not_a_catch():
         pd.Timestamp("2025-01-01"),
     )
     assert m["incidents"] == 0 and m["false_alarms"] == 1
+
+
+def test_consecutive_spike_months_merge_into_one_incident():
+    rng = np.random.default_rng(3)
+    # 30 quiet weeks, then ~9 weeks of high volume spanning two calendar months, then quiet.
+    counts = list(rng.poisson(15, 30)) + [150, 160, 170, 180, 190, 200, 180, 170, 160] + list(rng.poisson(15, 20))
+    inc = label_incidents(series(counts))
+    assert len(inc) == 1
+    assert inc.iloc[0]["end_month"] > inc.iloc[0]["start_month"]
+
+
+def test_incident_months_in_different_series_do_not_merge():
+    rng = np.random.default_rng(4)
+    a = series(list(rng.poisson(15, 40)) + [200, 200, 200, 200] + list(rng.poisson(15, 10)), company="A")
+    b = series(list(rng.poisson(15, 44)) + [200, 200, 200, 200] + list(rng.poisson(15, 6)), company="B")
+    inc = label_incidents(pd.concat([a, b], ignore_index=True))
+    assert sorted(inc["company"]) == ["A", "B"]

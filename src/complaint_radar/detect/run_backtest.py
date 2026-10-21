@@ -16,7 +16,7 @@ from complaint_radar.detect.series import weekly_series
 log = logging.getLogger(__name__)
 
 TUNE = (pd.Timestamp("2016-01-01"), pd.Timestamp("2022-01-01"))
-TEST = (pd.Timestamp("2022-01-01"), pd.Timestamp("2026-08-01"))  # archive ends mid-Aug 2026
+TEST = (pd.Timestamp("2022-01-01"), pd.Timestamp("2026-06-01"))  # archive ends 2026-08-14; later weeks still filling
 GRIDS = {
     "volume_rule": list(np.round(np.arange(1.5, 8.01, 0.25), 2)),
     "robust_z": list(np.round(np.arange(0.5, 25.01, 0.5), 2)),

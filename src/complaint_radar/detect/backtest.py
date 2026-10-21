@@ -37,9 +37,9 @@ def label_incidents(weekly: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame(columns=[*SERIES_KEY, "start_month", "end_month", "peak_week", "n", "base"])
 
     # Merge consecutive incident months into one incident per series.
-    hit = hit.sort_values([*SERIES_KEY, "month"])
-    new_run = hit.groupby(SERIES_KEY, sort=False, observed=True)["month"].diff() != pd.DateOffset(months=1)
-    new_run = hit["month"].diff().dt.days.fillna(999).gt(31) | new_run
+    hit = hit.sort_values([*SERIES_KEY, "month"]).reset_index(drop=True)
+    prev = hit.groupby(SERIES_KEY, sort=False, observed=True)["month"].shift(1)
+    new_run = prev.isna() | (hit["month"] != prev + pd.offsets.MonthBegin(1))
     hit["incident_no"] = new_run.cumsum()
     incidents = (
         hit.groupby([*SERIES_KEY, "incident_no"], sort=False, observed=True)

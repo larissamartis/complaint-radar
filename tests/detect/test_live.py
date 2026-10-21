@@ -65,3 +65,9 @@ def test_detect_current_columns(tmp_path):
     from complaint_radar.detect.live import ALERT_COLUMNS
 
     assert tuple(detect_current(make_snapshot(tmp_path), AS_OF).columns) == ALERT_COLUMNS
+
+
+def test_bureau_segment_uses_its_own_threshold():
+    from complaint_radar.detect.live import PRODUCTION_THRESHOLDS
+
+    assert PRODUCTION_THRESHOLDS == {"other": 1.75, "bureau": 3.0}
