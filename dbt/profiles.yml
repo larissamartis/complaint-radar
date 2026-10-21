@@ -3,7 +3,7 @@ complaint_radar:
   outputs:
     local:
       type: duckdb
-      path: "{{ env_var('CR_DUCKDB_PATH') }}"
+      path: "{{ env_var('CR_DUCKDB_PATH', 'complaint_radar.duckdb') }}"
       threads: 4
       settings:
         memory_limit: "6GB"

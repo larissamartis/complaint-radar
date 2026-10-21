@@ -7,7 +7,7 @@ sources:
       - name: complaints_archive
         description: CFPB complaints from the FOIA narratives archive (Dec 2011 to Aug 2026), one row per complaint.
         config:
-          external_location: "read_parquet('{{ env_var('CR_LAKE_DIR') }}/complaints_archive/*.parquet')"
+          external_location: "read_parquet('{{ env_var('CR_LAKE_DIR', 'lake-not-configured') }}/complaints_archive/*.parquet')"
 
   - name: warehouse
     description: Append-only BigQuery tables written by the daily pipeline (load jobs only; sandbox has no DML).
