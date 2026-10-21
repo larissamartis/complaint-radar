@@ -98,6 +98,8 @@ def backfill_archive(raw_dir: Path, out_dir: Path, contract_path: Path) -> Backf
     """Normalise every archive zip in `raw_dir` to `out_dir/<name>.parquet`, contract-checked."""
     contract = load_contract(contract_path)
     out_dir.mkdir(parents=True, exist_ok=True)
+    staging_dir = out_dir.parent / "_staging"
+    staging_dir.mkdir(parents=True, exist_ok=True)
     report = BackfillReport()
     for zpath in sorted(raw_dir.glob("*.zip")):
         name = zpath.stem
@@ -105,15 +107,18 @@ def backfill_archive(raw_dir: Path, out_dir: Path, contract_path: Path) -> Backf
         if final.exists():
             report.skipped.append(name)
             continue
-        staging = out_dir / f"{name}.staging.parquet"
+        # Staging lives outside out_dir so dbt (which globs out_dir/*.parquet) never sees unchecked rows.
+        staging = staging_dir / f"{name}.parquet"
         with tempfile.TemporaryDirectory(dir=out_dir.parent) as tmp:
             with zipfile.ZipFile(zpath) as zf:
-                member = next(m for m in zf.namelist() if m.lower().endswith(".csv"))
+                member = next((m for m in zf.namelist() if m.lower().endswith(".csv")), None)
+                if member is None:
+                    raise ValueError(f"{zpath.name} contains no CSV file")
                 csv_path = Path(zf.extract(member, tmp))
             try:
                 rows = normalize_csv(csv_path, staging, source_file=name)
                 result = check_parquet(staging, contract)
-            except Exception:
+            except BaseException:
                 staging.unlink(missing_ok=True)
                 raise
             finally:

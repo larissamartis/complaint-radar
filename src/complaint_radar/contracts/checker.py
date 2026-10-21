@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 from datetime import date
+from importlib import resources
 from pathlib import Path
 
 import duckdb
@@ -13,6 +14,11 @@ class ContractResult:
     passed: bool
     violations: list[str] = field(default_factory=list)
     row_count: int = 0
+
+
+def default_contract_path() -> Path:
+    """The complaints contract shipped inside the package."""
+    return Path(str(resources.files("complaint_radar.contracts") / "complaints.yml"))
 
 
 def load_contract(path: Path) -> dict:

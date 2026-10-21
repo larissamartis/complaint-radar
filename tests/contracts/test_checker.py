@@ -4,9 +4,9 @@ from pathlib import Path
 import duckdb
 import pytest
 
-from complaint_radar.contracts.checker import check_parquet, load_contract
+from complaint_radar.contracts.checker import check_parquet, default_contract_path, load_contract
 
-CONTRACT = load_contract(Path(__file__).parents[2] / "contracts" / "complaints.yml")
+CONTRACT = load_contract(default_contract_path())
 
 GOOD = [
     (

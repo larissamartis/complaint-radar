@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: lake
-    description: Canonical Parquet files written by the ingestion layer (see contracts/complaints.yml).
+    description: Canonical Parquet files written by the ingestion layer (see src/complaint_radar/contracts/complaints.yml).
     tables:
       - name: complaints_archive
         description: CFPB complaints from the FOIA narratives archive (Dec 2011 to Aug 2026), one row per complaint.

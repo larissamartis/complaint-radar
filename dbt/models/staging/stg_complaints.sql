@@ -25,7 +25,8 @@ select
     s.company_response,
     s.timely_response = 'Yes' as is_timely,
     case
-        when s.company_response is null or s.company_response = 'In progress' then null
+        -- No outcome yet (in progress) or no outcome at all (untimely): unknown, not "no relief".
+        when s.company_response is null or s.company_response in ('In progress', 'Untimely response') then null
         when s.company_response in (
             'Closed with monetary relief', 'Closed with non-monetary relief', 'Closed with relief'
         ) then true

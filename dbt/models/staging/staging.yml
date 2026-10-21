@@ -17,7 +17,7 @@ models:
               arguments:
                 values: [bureau, other]
       - name: relief_given
-        description: True when the company gave monetary or non-monetary relief; NULL while in progress.
+        description: True when the company gave monetary or non-monetary relief; NULL when in progress or untimely.
       - name: row_hash
         data_tests: [not_null]
 
@@ -38,7 +38,7 @@ unit_tests:
           union all
           select 5::bigint as complaint_id, date '2024-01-01' as date_received, null::varchar as product, null::varchar as sub_product, null::varchar as issue, null::varchar as sub_issue, null::varchar as narrative, null::varchar as company_public_response, 'A' as company, null::varchar as state, null::varchar as zip_code, null::varchar as tags, null::varchar as submitted_via, date '2024-01-02' as date_sent_to_company, 'Closed with non-monetary relief' as company_response, 'Yes' as timely_response, 'h' as row_hash, null::varchar as source_file
           union all
-          select 6::bigint as complaint_id, date '2024-01-01' as date_received, null::varchar as product, null::varchar as sub_product, null::varchar as issue, null::varchar as sub_issue, null::varchar as narrative, null::varchar as company_public_response, 'EQUIFAX, INC.' as company, null::varchar as state, null::varchar as zip_code, null::varchar as tags, null::varchar as submitted_via, date '2024-01-02' as date_sent_to_company, 'Closed with explanation' as company_response, 'Yes' as timely_response, 'h' as row_hash, null::varchar as source_file
+          select 6::bigint as complaint_id, date '2024-01-01' as date_received, null::varchar as product, null::varchar as sub_product, null::varchar as issue, null::varchar as sub_issue, null::varchar as narrative, null::varchar as company_public_response, 'EQUIFAX, INC.' as company, null::varchar as state, null::varchar as zip_code, null::varchar as tags, null::varchar as submitted_via, date '2024-01-02' as date_sent_to_company, 'Untimely response' as company_response, 'Yes' as timely_response, 'h' as row_hash, null::varchar as source_file
       - input: ref('bureau_companies')
         rows:
           - {company: "EQUIFAX, INC."}
@@ -49,4 +49,4 @@ unit_tests:
         - {complaint_id: 3, relief_given: null, segment: other}
         - {complaint_id: 4, relief_given: null, segment: other}
         - {complaint_id: 5, relief_given: true, segment: other}
-        - {complaint_id: 6, relief_given: false, segment: bureau}
+        - {complaint_id: 6, relief_given: null, segment: bureau}

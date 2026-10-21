@@ -4,10 +4,11 @@ from pathlib import Path
 
 import pytest
 
+from complaint_radar.contracts.checker import default_contract_path
 from complaint_radar.ingest.archive import ContractViolation, backfill_archive, download_archive
 
 FIX = Path(__file__).parents[1] / "fixtures"
-CONTRACT = Path(__file__).parents[2] / "contracts" / "complaints.yml"
+CONTRACT = default_contract_path()
 
 
 def make_zip(raw: Path, name: str, csv_text: str) -> Path:
@@ -96,3 +97,17 @@ def test_download_retries_after_failure(tmp_path):
     paths = download_archive(tmp_path, names=("F",), session=session, backoff=0)
     assert paths == [tmp_path / "F.zip"] and paths[0].stat().st_size == 10
     assert session.gets == 2 and not list(tmp_path.glob("*.part"))
+
+
+def test_interrupt_during_check_leaves_nothing_dbt_can_read(tmp_path, monkeypatch):
+    import complaint_radar.ingest.archive as archive
+
+    make_zip(tmp_path / "raw", "CCDB_Export_A", sample())
+
+    def boom(*a, **k):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(archive, "check_parquet", boom)
+    with pytest.raises(KeyboardInterrupt):
+        backfill_archive(tmp_path / "raw", tmp_path / "out", CONTRACT)
+    assert list((tmp_path / "out").glob("*.parquet")) == []
