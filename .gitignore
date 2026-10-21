@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+# Data (raw data lives outside the repo)
+data/raw/
+*.zip
+*.csv
+*.duckdb
+*.duckdb.wal
+*.parquet
+!data/serving/**
+# dbt
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+# Secrets
+.env
+*.json.key
+gcp-*.json
