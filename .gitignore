@@ -21,3 +21,5 @@ dbt/dbt_packages/
 *.json.key
 gcp-*.json
 !tests/fixtures/**
+dbt/.user.yml
+!dbt/seeds/*.csv
