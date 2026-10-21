@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Unit tests
+        run: uv run pytest -q
+
+      - name: dbt build on fixture lake
+        env:
+          CR_LAKE_DIR: ${{ github.workspace }}/tests/fixtures/lake
+          CR_DUCKDB_PATH: ${{ runner.temp }}/ci.duckdb
+        run: uv run dbt build --project-dir dbt --profiles-dir dbt
