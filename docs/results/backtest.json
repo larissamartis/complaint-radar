@@ -1,0 +1,351 @@
+{
+  "definitions": {
+    "tune": [
+      "2016-01-01",
+      "2022-01-01"
+    ],
+    "test": [
+      "2022-01-01",
+      "2026-08-01"
+    ],
+    "max_false_alarms_per_100_series_months_on_tune": 2.0
+  },
+  "segments": {
+    "other": {
+      "detectors": {
+        "volume_rule": {
+          "threshold": 1.75,
+          "tune": {
+            "incidents": 73,
+            "caught": 67,
+            "recall": 0.9178082191780822,
+            "median_lead_days": 14.0,
+            "p25_lead_days": 0.0,
+            "alerts": 454,
+            "false_alarms": 342,
+            "precision": 0.24669603524229078,
+            "false_alarms_per_100_series_months": 1.800685281038128
+          },
+          "test": {
+            "incidents": 261,
+            "caught": 241,
+            "recall": 0.9233716475095786,
+            "median_lead_days": 21.0,
+            "p25_lead_days": 0.0,
+            "alerts": 1440,
+            "false_alarms": 1035,
+            "precision": 0.28125,
+            "false_alarms_per_100_series_months": 3.2105888585050177,
+            "share_caught_7d_early": 0.6398467432950191
+          },
+          "test_recall_at_equal_false_alarm_budget": {
+            "0.5": {
+              "recall": 0.6934865900383141,
+              "median_lead_days": 14.0,
+              "threshold": 3.0
+            },
+            "1.0": {
+              "recall": 0.8620689655172413,
+              "median_lead_days": 21.0,
+              "threshold": 2.25
+            },
+            "2.0": {
+              "recall": 0.9042145593869731,
+              "median_lead_days": 21.0,
+              "threshold": 2.0
+            }
+          }
+        },
+        "robust_z": {
+          "threshold": 2.5,
+          "tune": {
+            "incidents": 73,
+            "caught": 61,
+            "recall": 0.8356164383561644,
+            "median_lead_days": 14.0,
+            "p25_lead_days": 0.0,
+            "alerts": 457,
+            "false_alarms": 368,
+            "precision": 0.19474835886214437,
+            "false_alarms_per_100_series_months": 1.9375794836901492
+          },
+          "test": {
+            "incidents": 261,
+            "caught": 235,
+            "recall": 0.9003831417624522,
+            "median_lead_days": 21.0,
+            "p25_lead_days": 0.0,
+            "alerts": 1642,
+            "false_alarms": 1272,
+            "precision": 0.22533495736906217,
+            "false_alarms_per_100_series_months": 3.945767176829355,
+            "share_caught_7d_early": 0.6168582375478927
+          },
+          "test_recall_at_equal_false_alarm_budget": {
+            "0.5": {
+              "recall": 0.5172413793103449,
+              "median_lead_days": 7.0,
+              "threshold": 6.5
+            },
+            "1.0": {
+              "recall": 0.735632183908046,
+              "median_lead_days": 21.0,
+              "threshold": 4.5
+            },
+            "2.0": {
+              "recall": 0.8275862068965517,
+              "median_lead_days": 21.0,
+              "threshold": 3.5
+            }
+          }
+        },
+        "nb_surprise": {
+          "threshold": 2.0,
+          "tune": {
+            "incidents": 73,
+            "caught": 56,
+            "recall": 0.7671232876712328,
+            "median_lead_days": 14.0,
+            "p25_lead_days": 0.0,
+            "alerts": 320,
+            "false_alarms": 270,
+            "precision": 0.15625,
+            "false_alarms_per_100_series_months": 1.421593642924838
+          },
+          "test": {
+            "incidents": 261,
+            "caught": 216,
+            "recall": 0.8275862068965517,
+            "median_lead_days": 21.0,
+            "p25_lead_days": 0.0,
+            "alerts": 1123,
+            "false_alarms": 908,
+            "precision": 0.1914514692787177,
+            "false_alarms_per_100_series_months": 2.8166325444662377,
+            "share_caught_7d_early": 0.5517241379310345
+          },
+          "test_recall_at_equal_false_alarm_budget": {
+            "0.5": {
+              "recall": 0.4367816091954023,
+              "median_lead_days": 7.0,
+              "threshold": 4.5
+            },
+            "1.0": {
+              "recall": 0.5172413793103449,
+              "median_lead_days": 7.0,
+              "threshold": 3.5
+            },
+            "2.0": {
+              "recall": 0.7241379310344828,
+              "median_lead_days": 14.0,
+              "threshold": 2.5
+            }
+          }
+        }
+      },
+      "n_incidents_total": 334
+    },
+    "bureau": {
+      "detectors": {
+        "volume_rule": {
+          "threshold": 2.75,
+          "tune": {
+            "incidents": 12,
+            "caught": 8,
+            "recall": 0.6666666666666666,
+            "median_lead_days": 7.0,
+            "p25_lead_days": 0.0,
+            "alerts": 44,
+            "false_alarms": 29,
+            "precision": 0.34090909090909094,
+            "false_alarms_per_100_series_months": 1.9462082494450468
+          },
+          "test": {
+            "incidents": 100,
+            "caught": 62,
+            "recall": 0.62,
+            "median_lead_days": 17.5,
+            "p25_lead_days": 1.75,
+            "alerts": 101,
+            "false_alarms": 45,
+            "precision": 0.5544554455445545,
+            "false_alarms_per_100_series_months": 2.1530308049022855,
+            "share_caught_7d_early": 0.53
+          },
+          "test_recall_at_equal_false_alarm_budget": {
+            "0.5": {
+              "recall": 0.22,
+              "median_lead_days": 14.0,
+              "threshold": 5.75
+            },
+            "1.0": {
+              "recall": 0.24,
+              "median_lead_days": 14.0,
+              "threshold": 4.0
+            },
+            "2.0": {
+              "recall": 0.5,
+              "median_lead_days": 14.0,
+              "threshold": 3.0
+            }
+          }
+        },
+        "robust_z": {
+          "threshold": 6.0,
+          "tune": {
+            "incidents": 12,
+            "caught": 8,
+            "recall": 0.6666666666666666,
+            "median_lead_days": 7.0,
+            "p25_lead_days": 0.0,
+            "alerts": 57,
+            "false_alarms": 29,
+            "precision": 0.49122807017543857,
+            "false_alarms_per_100_series_months": 1.9462082494450468
+          },
+          "test": {
+            "incidents": 100,
+            "caught": 57,
+            "recall": 0.57,
+            "median_lead_days": 21.0,
+            "p25_lead_days": 7.0,
+            "alerts": 99,
+            "false_alarms": 49,
+            "precision": 0.505050505050505,
+            "false_alarms_per_100_series_months": 2.3444113208935997,
+            "share_caught_7d_early": 0.49
+          },
+          "test_recall_at_equal_false_alarm_budget": {
+            "0.5": {
+              "recall": 0.22,
+              "median_lead_days": 14.0,
+              "threshold": 13.0
+            },
+            "1.0": {
+              "recall": 0.31,
+              "median_lead_days": 14.0,
+              "threshold": 9.5
+            },
+            "2.0": {
+              "recall": 0.46,
+              "median_lead_days": 17.5,
+              "threshold": 7.0
+            }
+          }
+        },
+        "nb_surprise": {
+          "threshold": 4.5,
+          "tune": {
+            "incidents": 12,
+            "caught": 7,
+            "recall": 0.5833333333333334,
+            "median_lead_days": 14.0,
+            "p25_lead_days": 0.0,
+            "alerts": 38,
+            "false_alarms": 28,
+            "precision": 0.26315789473684215,
+            "false_alarms_per_100_series_months": 1.8790976201538383
+          },
+          "test": {
+            "incidents": 100,
+            "caught": 42,
+            "recall": 0.42,
+            "median_lead_days": 14.0,
+            "p25_lead_days": 0.0,
+            "alerts": 49,
+            "false_alarms": 27,
+            "precision": 0.44897959183673475,
+            "false_alarms_per_100_series_months": 1.2918184829413712,
+            "share_caught_7d_early": 0.37
+          },
+          "test_recall_at_equal_false_alarm_budget": {
+            "0.5": {
+              "recall": 0.19,
+              "median_lead_days": 14.0,
+              "threshold": 7.5
+            },
+            "1.0": {
+              "recall": 0.25,
+              "median_lead_days": 7.0,
+              "threshold": 5.5
+            },
+            "2.0": {
+              "recall": 0.55,
+              "median_lead_days": 14.0,
+              "threshold": 4.0
+            }
+          }
+        }
+      },
+      "n_incidents_total": 114
+    }
+  },
+  "named_incidents": [
+    {
+      "company": "MOHELA",
+      "issue": "Dealing with your lender or servicer",
+      "month": "2022-10",
+      "labelled_incident": true,
+      "peak_week": "2022-10-17",
+      "incident_complaints": 349,
+      "baseline_month_median": 15.0,
+      "volume_rule_lead_days": 35,
+      "robust_z_lead_days": 35,
+      "nb_surprise_lead_days": 35
+    },
+    {
+      "company": "Paypal Holdings, Inc",
+      "issue": "Managing, opening, or closing your mobile wallet account",
+      "month": "2021-03",
+      "labelled_incident": true,
+      "peak_week": "2021-03-22",
+      "incident_complaints": 683,
+      "baseline_month_median": 33.0,
+      "volume_rule_lead_days": 56,
+      "robust_z_lead_days": 56,
+      "nb_surprise_lead_days": 56
+    },
+    {
+      "company": "Chime Financial Inc",
+      "issue": "Managing an account",
+      "month": "2025-02",
+      "labelled_incident": false
+    },
+    {
+      "company": "NAVY FEDERAL CREDIT UNION",
+      "issue": "Problem caused by your funds being low",
+      "month": "2025-01",
+      "labelled_incident": true,
+      "peak_week": "2025-01-13",
+      "incident_complaints": 7024,
+      "baseline_month_median": 13.5,
+      "volume_rule_lead_days": 0,
+      "robust_z_lead_days": 0,
+      "nb_surprise_lead_days": 0
+    },
+    {
+      "company": "WELLS FARGO & COMPANY",
+      "issue": "Problem caused by your funds being low",
+      "month": "2023-01",
+      "labelled_incident": true,
+      "peak_week": "2023-01-16",
+      "incident_complaints": 882,
+      "baseline_month_median": 13.5,
+      "volume_rule_lead_days": 28,
+      "robust_z_lead_days": 28,
+      "nb_surprise_lead_days": 28
+    },
+    {
+      "company": "Block, Inc.",
+      "issue": "Other transaction problem",
+      "month": "2025-01",
+      "labelled_incident": true,
+      "peak_week": "2025-01-13",
+      "incident_complaints": 28008,
+      "baseline_month_median": 16.5,
+      "volume_rule_lead_days": 0,
+      "robust_z_lead_days": 0,
+      "nb_surprise_lead_days": 0
+    }
+  ]
+}

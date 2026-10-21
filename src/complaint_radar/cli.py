@@ -102,3 +102,24 @@ def backfill_cmd(since: str = typer.Option(..., help="Re-capture complaints rece
     run = backfill(deps, since=date.fromisoformat(since))
     _cleanup(deps.workdir, run)
     _report(run)
+
+
+@app.command("backtest")
+def backtest_cmd(out: Path = typer.Option(Path("docs/results/backtest.json"), help="Where to write results")) -> None:
+    """Backtest emerging-issue detectors on real past incidents in the local lake."""
+    import duckdb
+
+    from complaint_radar.detect.run_backtest import run_backtest
+
+    con = duckdb.connect(str(config.duckdb_path()), read_only=True)
+    res = run_backtest(con, out)
+    for seg, body in res["segments"].items():
+        typer.echo(f"\n[{seg}] incidents labelled: {body['n_incidents_total']}")
+        for det, r in body["detectors"].items():
+            t = r["test"]
+            typer.echo(
+                f"  {det:12} thr={r['threshold']:<5} test: recall {t['recall']:.0%} ({t['caught']}/{t['incidents']}), "
+                f"median lead {t['median_lead_days']} d, "
+                f"FA/100 series-months {t['false_alarms_per_100_series_months']:.2f}, "
+                f"precision {t['precision']:.0%}"
+            )
