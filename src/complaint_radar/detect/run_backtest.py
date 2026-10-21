@@ -120,7 +120,8 @@ def run_backtest(con: duckdb.DuckDBPyConnection, out_json: Path, daily_table: st
             al = alerts(seg, det, threshold)
             alert_sets[det] = al
             test_m = evaluate(al, incidents, seg, *TEST)
-            test_m["share_caught_7d_early"] = _share_early(al, incidents, *TEST)
+            for days in (7, 14, 21):
+                test_m[f"share_caught_{days}d_early"] = _share_early(al, incidents, *TEST, days=days)
             seg_res[det] = {
                 "threshold": float(threshold),
                 "tune": tune_m,

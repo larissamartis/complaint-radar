@@ -18,6 +18,7 @@ class FakeWarehouse:
         self.runs: list[dict] = []
         self.schema_calls = 0
         self.alerts: list[dict] = []
+        self.vintages: list[dict] = []
 
     def ensure_schema(self):
         self.schema_calls += 1
@@ -44,6 +45,13 @@ class FakeWarehouse:
 
     def record_run(self, run: dict) -> None:
         self.runs.append(run)
+
+    def has_vintage(self, as_of):
+        return any(v["as_of"] == as_of for v in self.vintages)
+
+    def load_vintage(self, df):
+        self.vintages.extend(df.to_dict("records"))
+        return len(df)
 
     def existing_alert_ids(self, week):
         return {a["alert_id"] for a in self.alerts if a["week_start"] == week}
@@ -174,3 +182,12 @@ def test_alerts_are_recorded_once_per_week(tmp_path, monkeypatch):
     second = run_daily(deps, force=True)
     assert [a["alert_id"] for a in deps.warehouse.alerts] == ["a1"]
     assert "1 new" in first["message"] and "0 new" in second["message"]
+
+
+def test_vintage_recorded_once_per_day(tmp_path):
+    deps, _, _ = make_deps(tmp_path)
+    run_daily(deps)
+    n = len(deps.warehouse.vintages)
+    run_daily(deps, force=True)
+    assert n > 0 and len(deps.warehouse.vintages) == n
+    assert {"as_of", "segment", "week_start", "age", "n_published"} <= set(deps.warehouse.vintages[0])

@@ -13,7 +13,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 
 from complaint_radar.contracts.checker import check_parquet, default_contract_path, load_contract
-from complaint_radar.detect.live import detect_current, target_week
+from complaint_radar.detect.live import detect_current, target_week, weekly_vintage
 from complaint_radar.ingest.snapshot import snapshot_to_parquet
 from complaint_radar.pipeline.change_capture import select_changes
 
@@ -100,6 +100,10 @@ def run_daily(deps: Deps, as_of: date | None = None, window_days: int = HOT_WIND
 
         run["step"] = "dbt"
         deps.run_dbt()
+
+        run["step"] = "vintage"
+        if not wh.has_vintage(as_of):
+            wh.load_vintage(weekly_vintage(snapshot, as_of))
 
         run["step"] = "detect"
         week = target_week(as_of)

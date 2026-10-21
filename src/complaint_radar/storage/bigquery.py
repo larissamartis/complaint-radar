@@ -18,7 +18,7 @@ LOCATION = "US"
 # Sandbox tables expire 60 days after creation. Pushing expiry forward on every run keeps the tables alive;
 # old *partitions* still expire after 60 days, which is exactly the rolling hot window we want.
 TABLE_KEEPALIVE_DAYS = 59
-TABLES = ("raw_complaint_versions", "pipeline_runs", "alerts")
+TABLES = ("raw_complaint_versions", "pipeline_runs", "alerts", "snapshot_vintages")
 
 _STRING_COLUMNS = (
     "product",
@@ -82,6 +82,7 @@ ALERTS_ARROW = pa.schema(
         ("alert_id", pa.string()),
         ("as_of", pa.date32()),
         ("week_start", pa.date32()),
+        ("week_age", pa.int64()),
         ("segment", pa.string()),
         ("company", pa.string()),
         ("product", pa.string()),
@@ -90,13 +91,26 @@ ALERTS_ARROW = pa.schema(
         ("threshold", pa.float64()),
         ("n", pa.int64()),
         ("expected", pa.float64()),
+        ("completeness", pa.float64()),
         ("score", pa.float64()),
         ("run_id", pa.string()),
         ("created_at", pa.timestamp("us", tz="UTC")),
     ]
 )
+VINTAGES_ARROW = pa.schema(
+    [
+        ("as_of", pa.date32()),
+        ("segment", pa.string()),
+        ("week_start", pa.date32()),
+        ("age", pa.int64()),
+        ("n_published", pa.int64()),
+    ]
+)
 _BQ_TYPES = {pa.string(): "STRING", pa.date32(): "DATE", pa.float64(): "FLOAT64", pa.int64(): "INT64"}
 ALERTS_SCHEMA = [bigquery.SchemaField(f.name, _BQ_TYPES.get(f.type, "TIMESTAMP")) for f in ALERTS_ARROW]
+
+
+VINTAGES_SCHEMA = [bigquery.SchemaField(f.name, _BQ_TYPES[f.type]) for f in VINTAGES_ARROW]
 
 
 class BigQueryWarehouse:
@@ -123,6 +137,10 @@ class BigQueryWarehouse:
         alerts = bigquery.Table(self._table("alerts"), schema=ALERTS_SCHEMA)
         alerts.time_partitioning = bigquery.TimePartitioning(field="week_start")
         self.client.create_table(alerts, exists_ok=True)
+
+        vintages = bigquery.Table(self._table("snapshot_vintages"), schema=VINTAGES_SCHEMA)
+        vintages.time_partitioning = bigquery.TimePartitioning(field="as_of")
+        self.client.create_table(vintages, exists_ok=True)
         self.refresh_expiry()
 
     def refresh_expiry(self) -> None:
@@ -178,3 +196,14 @@ class BigQueryWarehouse:
             path = Path(tmp) / "alerts.parquet"
             pq.write_table(table, path)
             return self.load_parquet(path, "alerts")
+
+    def has_vintage(self, as_of) -> bool:
+        sql = f"SELECT count(*) AS n FROM `{self._table('snapshot_vintages')}` WHERE as_of = '{as_of.isoformat()}'"
+        return next(iter(self.client.query(sql).result()))["n"] > 0
+
+    def load_vintage(self, vintage_df) -> int:
+        table = pa.Table.from_pylist(vintage_df.to_dict("records"), schema=VINTAGES_ARROW)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "vintage.parquet"
+            pq.write_table(table, path)
+            return self.load_parquet(path, "snapshot_vintages")
