@@ -23,6 +23,7 @@ dev = [
     "ruff>=0.8",
     "dbt-core>=1.10",
     "dbt-duckdb>=1.10",
+    "dbt-bigquery>=1.12.1",
 ]
 
 [build-system]

@@ -8,3 +8,13 @@ sources:
         description: CFPB complaints from the FOIA narratives archive (Dec 2011 to Aug 2026), one row per complaint.
         config:
           external_location: "read_parquet('{{ env_var('CR_LAKE_DIR') }}/complaints_archive/*.parquet')"
+
+  - name: warehouse
+    description: Append-only BigQuery tables written by the daily pipeline (load jobs only; sandbox has no DML).
+    database: "{{ env_var('CR_BQ_PROJECT', 'complaint-radar-512308') }}"
+    schema: complaint_radar
+    tables:
+      - name: raw_complaint_versions
+        description: One row per new or changed complaint version (complaint_id, row_hash), partitioned by loaded_date.
+      - name: pipeline_runs
+        description: One row per daily pipeline run with status, step and row counts.

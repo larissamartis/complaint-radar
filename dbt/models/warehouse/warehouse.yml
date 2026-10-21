@@ -1,0 +1,34 @@
+version: 2
+
+models:
+  - name: stg_wh_complaint_versions
+    description: Typed view over every appended complaint version.
+  - name: wh_complaints_current
+    description: Latest version of each complaint in the hot window, with segment and relief flag.
+    columns:
+      - name: complaint_id
+        data_tests: [unique, not_null]
+      - name: segment
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [bureau, other]
+  - name: wh_complaints_daily
+    description: Complaint counts per day, segment, company, product and issue over the hot window.
+
+unit_tests:
+  - name: current_view_keeps_latest_version
+    model: wh_complaints_current
+    given:
+      - input: ref('stg_wh_complaint_versions')
+        rows:
+          - {complaint_id: 1, company: "A", company_response: "In progress", loaded_date: "2026-10-01", run_id: "r1", row_hash: "a"}
+          - {complaint_id: 1, company: "A", company_response: "Closed with explanation", loaded_date: "2026-10-05", run_id: "r5", row_hash: "b"}
+          - {complaint_id: 2, company: "EQUIFAX, INC.", company_response: "Closed with monetary relief", loaded_date: "2026-10-05", run_id: "r5", row_hash: "c"}
+      - input: ref('bureau_companies')
+        rows:
+          - {company: "EQUIFAX, INC."}
+    expect:
+      rows:
+        - {complaint_id: 1, company_response: "Closed with explanation", relief_given: false, segment: other}
+        - {complaint_id: 2, company_response: "Closed with monetary relief", relief_given: true, segment: bureau}

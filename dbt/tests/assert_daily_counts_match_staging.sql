@@ -1,3 +1,4 @@
+{{ config(enabled=target.type == 'duckdb') }}
 -- Fails if the daily mart loses or duplicates complaints.
 select *
 from (select sum(n_complaints) as mart_total from {{ ref('fct_complaints_daily') }})

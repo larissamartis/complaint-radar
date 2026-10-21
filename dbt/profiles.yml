@@ -8,3 +8,13 @@ complaint_radar:
       settings:
         memory_limit: "6GB"
         preserve_insertion_order: false
+    bigquery:
+      type: bigquery
+      method: service-account
+      keyfile: "{{ env_var('GOOGLE_APPLICATION_CREDENTIALS', '') }}"
+      project: "{{ env_var('CR_BQ_PROJECT', 'complaint-radar-512308') }}"
+      dataset: complaint_radar
+      location: US
+      threads: 4
+      job_execution_timeout_seconds: 600
+      priority: interactive

@@ -9,11 +9,21 @@ test-paths: ["tests"]
 target-path: "target"
 clean-targets: ["target", "dbt_packages"]
 
+# Two targets share one project:
+#   local (duckdb)    - full history + text in the local lake; staging/intermediate/marts
+#   bigquery          - 60-day hot window in the BigQuery sandbox; warehouse views only
+#                       (views use no storage and are recreated daily, which resets sandbox expiry)
 models:
   complaint_radar:
     staging:
       +materialized: view
+      +enabled: "{{ target.type == 'duckdb' }}"
     intermediate:
       +materialized: table
+      +enabled: "{{ target.type == 'duckdb' }}"
     marts:
       +materialized: table
+      +enabled: "{{ target.type == 'duckdb' }}"
+    warehouse:
+      +materialized: view
+      +enabled: "{{ target.type == 'bigquery' }}"
