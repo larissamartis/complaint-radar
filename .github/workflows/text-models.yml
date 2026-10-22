@@ -1,0 +1,75 @@
+name: Build text models
+
+# One-off / occasional job: rebuilds the topic model and campaign analysis from the frozen CFPB narratives
+# archive, then commits the small outputs the daily pipeline and dashboard use. Runs on a GitHub runner,
+# so no local machine is needed.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: text-models
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.3.0
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Install dependencies (with text-modelling group, CPU-only torch)
+        run: uv sync --locked --group text
+
+      - name: Set paths
+        run: |
+          echo "CR_DATA_DIR=$RUNNER_TEMP/data" >> "$GITHUB_ENV"
+          echo "CR_LAKE_DIR=$RUNNER_TEMP/data/lake" >> "$GITHUB_ENV"
+          echo "CR_DUCKDB_PATH=$RUNNER_TEMP/data/lake/complaint_radar.duckdb" >> "$GITHUB_ENV"
+
+      - name: Download and load the narratives archive (21 files, ~1.4 GB)
+        run: |
+          uv run complaint-radar download-archive
+          uv run complaint-radar backfill-archive
+          rm -rf "$CR_DATA_DIR/raw"
+
+      - name: Build local models (dbt on DuckDB)
+        run: uv run dbt build --project-dir dbt --profiles-dir dbt
+
+      - name: Start topic-naming model (optional)
+        continue-on-error: true
+        timeout-minutes: 10
+        run: |
+          curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION=0.40.8 sh
+          (ollama serve > "$RUNNER_TEMP/ollama.log" 2>&1 &)
+          sleep 5
+          ollama pull qwen2.5:1.5b
+
+      - name: Embed the stratified sample
+        run: uv run complaint-radar embed-sample
+
+      - name: Discover topics, label the corpus, write the topic lookup
+        run: uv run complaint-radar build-topics
+
+      - name: Score incidents for template / campaign amplification
+        run: uv run complaint-radar campaigns
+
+      - name: Commit outputs
+        run: |
+          ls -la src/complaint_radar/data docs/results
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/complaint_radar/data/topic_lookup.json docs/results/topics.json docs/results/campaigns.json
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git commit -m "Update topic lookup and text-model results"
+          git pull --rebase
+          git push

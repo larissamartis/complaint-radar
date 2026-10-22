@@ -184,3 +184,21 @@ def build_topics_cmd() -> None:
         llm=llm if llm.available() else None,
     )
     typer.echo({k: v for k, v in res.items() if k != "topic_list"})
+
+
+@app.command("embed-sample")
+def embed_sample_cmd(n: int = typer.Option(40_000, help="Sample size (stratified by product and year)")) -> None:
+    """Load the non-bureau narrative corpus, draw a stratified sample and cache its sentence embeddings."""
+    import duckdb
+
+    from complaint_radar.text.corpus import embed, load_corpus, stratified_sample
+
+    out = config.lake_dir() / "text"
+    out.mkdir(parents=True, exist_ok=True)
+    con = duckdb.connect(str(config.duckdb_path()), read_only=True)
+    corpus = load_corpus(con)
+    sample = stratified_sample(corpus, n, seed=0)
+    corpus.to_parquet(out / "corpus.parquet")
+    sample.to_parquet(out / "sample.parquet")
+    emb = embed(sample["text"].tolist(), cache=out / "sample_embeddings.npy")
+    typer.echo(f"corpus {len(corpus):,} unique narratives, sample {len(sample):,}, embeddings {emb.shape}")
