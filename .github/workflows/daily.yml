@@ -28,6 +28,7 @@ jobs:
     env:
       CR_BQ_PROJECT: complaint-radar-512308
       PYTHONUTF8: "1"
+      CR_LLM_TIMEOUT: "60"
     steps:
       # The runner context is only available inside steps, so runner-temp paths are exported here.
       - name: Set paths
@@ -53,7 +54,7 @@ jobs:
         continue-on-error: true
         timeout-minutes: 10
         run: |
-          curl -fsSL https://ollama.com/install.sh | sh
+          curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION=0.40.8 sh
           (ollama serve > "$RUNNER_TEMP/ollama.log" 2>&1 &)
           sleep 5
           ollama pull qwen2.5:1.5b

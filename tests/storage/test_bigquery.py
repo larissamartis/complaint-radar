@@ -26,7 +26,7 @@ class FakeClient:
         self.tables.append((table, exists_ok))
 
     def get_table(self, ref):
-        return type("T", (), {"expires": None, "table_id": ref.split(".")[-1]})()
+        return type("T", (), {"expires": None, "table_id": ref.split(".")[-1], "schema": []})()
 
     def update_table(self, table, fields):
         return table
@@ -110,6 +110,7 @@ class QueryClient(FakeClient):
     def get_table(self, ref):
         class T:
             expires = None
+            schema: list = []
             table_id = ref.split(".")[-1]
 
         return T()
@@ -123,13 +124,9 @@ def test_ensure_schema_refreshes_table_expiry():
     # Sandbox tables expire 60 days after creation; each run pushes expiry forward so the history survives.
     client = QueryClient()
     BigQueryWarehouse(client, "proj").ensure_schema()
-    assert {t for t, f, e in client.updated} == {
-        "raw_complaint_versions",
-        "pipeline_runs",
-        "alerts",
-        "snapshot_vintages",
-    }
-    assert all(f == ["expires"] and e is not None for _, f, e in client.updated)
+    expiry = [(t, e) for t, f, e in client.updated if f == ["expires"]]
+    assert {t for t, _ in expiry} == {"raw_complaint_versions", "pipeline_runs", "alerts", "snapshot_vintages"}
+    assert all(e is not None for _, e in expiry)
 
 
 def test_existing_keys_are_latest_version_only(tmp_path):
@@ -138,3 +135,26 @@ def test_existing_keys_are_latest_version_only(tmp_path):
     BigQueryWarehouse(client, "proj").export_existing_keys(tmp_path / "k.parquet")
     sql = client.sql[0].lower()
     assert "row_number()" in sql and "partition by complaint_id" in sql and "= 1" in sql
+
+
+def test_ensure_schema_adds_missing_alert_columns():
+    # An alerts table created by an older release lacks newer columns; they must be added (metadata change,
+    # allowed in the sandbox) or the next load job would be rejected.
+    from google.cloud import bigquery
+
+    from complaint_radar.storage.bigquery import ALERTS_SCHEMA
+
+    class OldTables(QueryClient):
+        def get_table(self, ref):
+            t = bigquery.Table(ref, schema=ALERTS_SCHEMA[:5] if ref.endswith(".alerts") else [])
+            return t
+
+        def update_table(self, table, fields):
+            self.updated.append((table.table_id, fields, [f.name for f in table.schema]))
+            return table
+
+    client = OldTables()
+    BigQueryWarehouse(client, "proj").ensure_schema()
+    schema_updates = [u for u in client.updated if u[1] == ["schema"]]
+    assert schema_updates and schema_updates[0][0] == "alerts"
+    assert {"summary", "pattern", "typical_topics"} <= set(schema_updates[0][2])

@@ -15,7 +15,7 @@ import numpy as np
 from complaint_radar.text.clean import clean_text, words
 
 NUM_PERM = 100
-BANDS, ROWS = 20, 5  # LSH catches pairs above Jaccard ~0.55 with high probability
+BANDS, ROWS = 25, 4  # catches ~97% of pairs at Jaccard 0.6
 JACCARD_THRESHOLD = 0.6
 SHINGLE = 3
 _PRIME = np.uint64(4294967311)  # > 2**32

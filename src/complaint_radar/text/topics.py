@@ -15,7 +15,7 @@ import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupShuffleSplit
 from sklearn.pipeline import Pipeline
 
 LOOKUP_TOP_TOPICS = 3
@@ -56,9 +56,22 @@ def distill(texts: list[str], labels: np.ndarray, seed: int = 0) -> Pipeline:
     return clf.fit(texts, labels)
 
 
+def grouped_split(texts: list[str], test_size: float = 0.2, seed: int = 0) -> tuple[np.ndarray, np.ndarray]:
+    """Train/test indices with every near-duplicate cluster entirely on one side (no template leakage)."""
+    from complaint_radar.text.near_dup import near_duplicate_clusters
+
+    groups = near_duplicate_clusters(texts, seed=seed)
+    splitter = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=seed)
+    train, test = next(splitter.split(np.zeros(len(texts)), groups=groups))
+    return train, test
+
+
 def evaluate_distillation(sample: pd.DataFrame, labels: np.ndarray, seed: int = 0) -> tuple[Pipeline, dict]:
-    """Held-out accuracy of the text classifier vs a product+issue baseline (most common topic per pair)."""
-    idx_train, idx_test = train_test_split(np.arange(len(sample)), test_size=0.2, random_state=seed, stratify=None)
+    """Held-out accuracy of the text classifier vs a product+issue baseline (most common topic per pair).
+
+    The split keeps near-duplicate clusters together so copies of one template cannot be on both sides.
+    """
+    idx_train, idx_test = grouped_split(sample["text"].tolist(), test_size=0.2, seed=seed)
     train, test = sample.iloc[idx_train], sample.iloc[idx_test]
     y_train, y_test = labels[idx_train], labels[idx_test]
     clf = distill(train["text"].tolist(), y_train, seed)

@@ -59,7 +59,11 @@ def _deps():
 
     from complaint_radar.summarize.ollama import DEFAULT_MODEL, DEFAULT_URL, OllamaClient
 
-    llm = OllamaClient(os.environ.get("CR_OLLAMA_URL", DEFAULT_URL), os.environ.get("CR_LLM_MODEL", DEFAULT_MODEL))
+    llm = OllamaClient(
+        os.environ.get("CR_OLLAMA_URL", DEFAULT_URL),
+        os.environ.get("CR_LLM_MODEL", DEFAULT_MODEL),
+        timeout=float(os.environ.get("CR_LLM_TIMEOUT", "120")),
+    )
     if not llm.available():
         logging.getLogger(__name__).warning("summary model not available; alerts will use template summaries")
         llm = None

@@ -234,3 +234,26 @@ def test_age_two_alerts_are_not_duplicated_on_later_days(tmp_path, monkeypatch):
     run_daily(deps)
     run_daily(deps, force=True)
     assert [a["alert_id"] for a in deps.warehouse.alerts] == ["a2"]
+
+
+def test_wave_flag_counts_alerts_already_loaded_this_week(tmp_path, monkeypatch):
+    import pandas as pd
+
+    import complaint_radar.pipeline.daily as daily
+    from complaint_radar.detect.live import ALERT_COLUMNS, target_week
+
+    week = target_week(AS_OF)
+    base = {"week_start": week, "product": "P", "issue": "I", "n": 60, "expected": 10.0, "score": 6.0}
+    rows = [dict.fromkeys(ALERT_COLUMNS, None) | base | {"alert_id": f"a{i}", "company": f"C{i}"} for i in range(5)]
+    calls = {"n": 0}
+
+    def fake_detect(snapshot, as_of):
+        calls["n"] += 1
+        return pd.DataFrame(rows[:4] if calls["n"] == 1 else rows)  # 5th company appears on day 2
+
+    monkeypatch.setattr(daily, "detect_current", fake_detect)
+    deps, _, _ = make_deps(tmp_path)
+    run_daily(deps)
+    run_daily(deps, force=True)
+    fifth = [a for a in deps.warehouse.alerts if a["alert_id"] == "a4"][0]
+    assert fifth["wave_companies"] == 5 and fifth["pattern"] == "cross_company_wave"

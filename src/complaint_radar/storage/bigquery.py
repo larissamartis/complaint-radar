@@ -142,11 +142,21 @@ class BigQueryWarehouse:
         alerts = bigquery.Table(self._table("alerts"), schema=ALERTS_SCHEMA)
         alerts.time_partitioning = bigquery.TimePartitioning(field="week_start")
         self.client.create_table(alerts, exists_ok=True)
+        self._add_missing_fields("alerts", ALERTS_SCHEMA)
 
         vintages = bigquery.Table(self._table("snapshot_vintages"), schema=VINTAGES_SCHEMA)
         vintages.time_partitioning = bigquery.TimePartitioning(field="as_of")
         self.client.create_table(vintages, exists_ok=True)
         self.refresh_expiry()
+
+    def _add_missing_fields(self, name: str, schema: list) -> None:
+        """Add columns introduced by a newer release (load jobs reject unknown columns)."""
+        table = self.client.get_table(self._table(name))
+        have = {f.name for f in table.schema}
+        missing = [f for f in schema if f.name not in have]
+        if missing:
+            table.schema = list(table.schema) + missing
+            self.client.update_table(table, ["schema"])
 
     def refresh_expiry(self) -> None:
         expires = datetime.now(UTC) + timedelta(days=TABLE_KEEPALIVE_DAYS)

@@ -7,12 +7,19 @@ FEES = "they charged me an overdraft fee twice even though my balance was positi
 FRAUD = "someone stole my card and made unauthorized transactions and the bank denied my fraud claim "
 
 
+FILLER = "my account bank called again week month told said waited still never help please branch online".split()
+
+
 def toy_docs(n=200, seed=0):
+    """Varied (non-template) texts: each mixes topic words with random filler, like organic complaints."""
     rng = np.random.default_rng(seed)
     rows = []
     for i in range(n):
         topic = int(rng.random() < 0.5)
-        text = (FRAUD if topic else FEES) + f"case {i} " + "x" * 60
+        vocab = (FRAUD if topic else FEES).split()
+        words = list(rng.choice(vocab, 8)) + list(rng.choice(FILLER, 25))
+        rng.shuffle(words)
+        text = " ".join(words) + f" reference {i}"
         rows.append({"product": "Checking", "issue": "Managing an account", "text": text, "topic": topic})
     return pd.DataFrame(rows)
 
@@ -54,3 +61,14 @@ def test_name_topic_accepts_short_llm_name_and_rejects_rambling():
     long = "This topic is about customers who were charged many different kinds of fees by their bank"
     assert name_topic(kw, ["x"], Says(long)) == ("overdraft, fee, charged, balance", "keywords")
     assert name_topic(kw, ["x"], None)[1] == "keywords"
+
+
+def test_distillation_split_keeps_near_duplicates_together():
+    from complaint_radar.text.topics import grouped_split
+
+    texts = ["the same template complaint text about fees " * 3] * 10 + [
+        f"organic complaint number {i} " * 5 for i in range(40)
+    ]
+    train, test = grouped_split(texts, test_size=0.2, seed=0)
+    template_idx = set(range(10))
+    assert template_idx <= set(train) or template_idx <= set(test)

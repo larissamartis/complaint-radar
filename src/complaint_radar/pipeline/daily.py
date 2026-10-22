@@ -113,10 +113,11 @@ def run_daily(deps: Deps, as_of: date | None = None, window_days: int = HOT_WIND
         found = detect_current(snapshot, as_of)
         scored_weeks = sorted({w for w in found["week_start"]} | {week})
         known = set().union(*(wh.existing_alert_ids(w) for w in scored_weeks))
+        found = flag_cross_company_waves(found)  # count waves over every alert this week, not only new ones
         new = found[~found["alert_id"].isin(known)]
         if len(new):
             run["step"] = "summarize"
-            new = enrich_alerts(flag_cross_company_waves(new), deps.llm)
+            new = enrich_alerts(new, deps.llm)
             wh.load_alerts(new, as_of, run["run_id"], _now())
         run["message"] = f"alerts for week {week}: {len(new)} new, {len(found)} total"
         log.info(run["message"])

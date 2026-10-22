@@ -224,6 +224,7 @@ dev = [
     { name = "dbt-duckdb" },
     { name = "pytest" },
     { name = "ruff" },
+    { name = "scikit-learn" },
 ]
 text = [
     { name = "bertopic" },
@@ -251,6 +252,7 @@ dev = [
     { name = "dbt-duckdb", specifier = ">=1.10" },
     { name = "pytest", specifier = ">=8" },
     { name = "ruff", specifier = ">=0.8" },
+    { name = "scikit-learn", specifier = ">=1.9.1" },
 ]
 text = [
     { name = "bertopic", specifier = ">=0.17.4" },
