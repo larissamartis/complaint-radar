@@ -47,6 +47,17 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
 
+      # Optional: a small local model for alert summaries. If this step fails the pipeline still runs and
+      # uses template summaries (the CLI checks whether the model is available).
+      - name: Start summary model (optional)
+        continue-on-error: true
+        timeout-minutes: 10
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          (ollama serve > "$RUNNER_TEMP/ollama.log" 2>&1 &)
+          sleep 5
+          ollama pull qwen2.5:1.5b
+
       - name: Write service-account key
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}

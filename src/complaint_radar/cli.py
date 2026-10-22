@@ -57,12 +57,20 @@ def _deps():
         cmd = ["dbt", "build", "--project-dir", str(dbt_dir), "--profiles-dir", str(dbt_dir), "--target", "bigquery"]
         subprocess.run(cmd, check=True)
 
+    from complaint_radar.summarize.ollama import DEFAULT_MODEL, DEFAULT_URL, OllamaClient
+
+    llm = OllamaClient(os.environ.get("CR_OLLAMA_URL", DEFAULT_URL), os.environ.get("CR_LLM_MODEL", DEFAULT_MODEL))
+    if not llm.available():
+        logging.getLogger(__name__).warning("summary model not available; alerts will use template summaries")
+        llm = None
+
     return Deps(
         api_latest_date=api_latest_date,
         fetch_snapshot=fetch_snapshot,
         warehouse=BigQueryWarehouse(bigquery.Client(project=project), project),
         run_dbt=run_dbt,
         workdir=config.data_root() / "work",
+        llm=llm,
     )
 
 
