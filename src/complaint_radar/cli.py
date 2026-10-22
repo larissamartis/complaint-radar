@@ -123,3 +123,36 @@ def backtest_cmd(out: Path = typer.Option(Path("docs/results/backtest.json"), he
                 f"FA/100 series-months {t['false_alarms_per_100_series_months']:.2f}, "
                 f"precision {t['precision']:.0%}"
             )
+
+
+@app.command("campaigns")
+def campaigns_cmd(out: Path = typer.Option(Path("docs/results/campaigns.json"), help="Where to write results")) -> None:
+    """Score every non-bureau incident (2016+) for template / campaign amplification using archived text."""
+    import json
+
+    import duckdb
+
+    from complaint_radar.detect.backtest import label_incidents
+    from complaint_radar.detect.patterns import score_incident_campaigns
+    from complaint_radar.detect.series import weekly_series
+
+    con = duckdb.connect(str(config.duckdb_path()), read_only=True)
+    weekly = weekly_series(con, "fct_complaints_daily", date(2015, 1, 1), date(2026, 5, 31), min_peak=10)
+    incidents = label_incidents(weekly[weekly["segment"] == "other"].reset_index(drop=True))
+    incidents = incidents[pd_ts(incidents["start_month"]) >= pd_ts("2016-01-01")]
+    scored = score_incident_campaigns(con, incidents)
+    summary = {
+        "incidents_scored": int(len(scored)),
+        "template_amplified": int((scored["label"] == "template_amplified").sum()),
+        "share_template_amplified": float((scored["label"] == "template_amplified").mean()),
+        "median_near_dup_share": float(scored["near_dup_share"].median()),
+        "median_near_dup_share_before": float(scored["near_dup_share_before"].dropna().median()),
+    }
+    out.write_text(json.dumps({"summary": summary, "incidents": scored.to_dict("records")}, indent=2), encoding="utf-8")
+    typer.echo(json.dumps(summary, indent=2))
+
+
+def pd_ts(x):
+    import pandas as pd
+
+    return pd.to_datetime(x)
