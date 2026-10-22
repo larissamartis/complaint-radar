@@ -93,6 +93,11 @@ ALERTS_ARROW = pa.schema(
         ("expected", pa.float64()),
         ("completeness", pa.float64()),
         ("score", pa.float64()),
+        ("wave_companies", pa.int64()),
+        ("pattern", pa.string()),
+        ("typical_topics", pa.string()),
+        ("summary", pa.string()),
+        ("summary_method", pa.string()),
         ("run_id", pa.string()),
         ("created_at", pa.timestamp("us", tz="UTC")),
     ]
@@ -190,7 +195,9 @@ class BigQueryWarehouse:
         return {r["alert_id"] for r in self.client.query(sql).result()}
 
     def load_alerts(self, alerts_df, as_of, run_id: str, created_at) -> int:
-        rows = alerts_df.assign(as_of=as_of, run_id=run_id, created_at=created_at).to_dict("records")
+        cols = [f.name for f in ALERTS_ARROW]
+        rows = alerts_df.assign(as_of=as_of, run_id=run_id, created_at=created_at).reindex(columns=cols)
+        rows = rows.astype(object).where(rows.notna(), None).to_dict("records")
         table = pa.Table.from_pylist(rows, schema=ALERTS_ARROW)
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "alerts.parquet"

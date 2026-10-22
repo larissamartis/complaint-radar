@@ -14,8 +14,10 @@ from pathlib import Path
 
 from complaint_radar.contracts.checker import check_parquet, default_contract_path, load_contract
 from complaint_radar.detect.live import detect_current, target_week, weekly_vintage
+from complaint_radar.detect.patterns import flag_cross_company_waves
 from complaint_radar.ingest.snapshot import snapshot_to_parquet
 from complaint_radar.pipeline.change_capture import select_changes
+from complaint_radar.summarize.enrich import enrich_alerts
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +40,7 @@ class Deps:
     run_dbt: Callable[[], None]
     workdir: Path
     today: Callable[[], date] = utc_today
+    llm: object | None = None  # summary model client; None means template summaries only
 
 
 def run_daily(deps: Deps, as_of: date | None = None, window_days: int = HOT_WINDOW_DAYS, force: bool = False) -> dict:
@@ -112,6 +115,8 @@ def run_daily(deps: Deps, as_of: date | None = None, window_days: int = HOT_WIND
         known = set().union(*(wh.existing_alert_ids(w) for w in scored_weeks))
         new = found[~found["alert_id"].isin(known)]
         if len(new):
+            run["step"] = "summarize"
+            new = enrich_alerts(flag_cross_company_waves(new), deps.llm)
             wh.load_alerts(new, as_of, run["run_id"], _now())
         run["message"] = f"alerts for week {week}: {len(new)} new, {len(found)} total"
         log.info(run["message"])

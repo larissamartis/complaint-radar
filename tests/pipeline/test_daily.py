@@ -175,7 +175,21 @@ def test_alerts_are_recorded_once_per_week(tmp_path, monkeypatch):
     from complaint_radar.detect.live import ALERT_COLUMNS, target_week
 
     week = target_week(AS_OF)
-    fake = pd.DataFrame([dict.fromkeys(ALERT_COLUMNS, None) | {"alert_id": "a1", "week_start": week, "n": 60}])
+    fake = pd.DataFrame(
+        [
+            dict.fromkeys(ALERT_COLUMNS, None)
+            | {
+                "alert_id": "a1",
+                "week_start": week,
+                "company": "A",
+                "product": "P",
+                "issue": "I",
+                "n": 60,
+                "expected": 10.0,
+                "score": 6.0,
+            }
+        ]
+    )
     monkeypatch.setattr(daily, "detect_current", lambda snapshot, as_of: fake)
     deps, _, _ = make_deps(tmp_path)
     first = run_daily(deps)
@@ -200,7 +214,21 @@ def test_age_two_alerts_are_not_duplicated_on_later_days(tmp_path, monkeypatch):
     from complaint_radar.detect.live import ALERT_COLUMNS, target_week
 
     older_week = target_week(AS_OF) - timedelta(weeks=1)
-    fake = pd.DataFrame([dict.fromkeys(ALERT_COLUMNS, None) | {"alert_id": "a2", "week_start": older_week}])
+    fake = pd.DataFrame(
+        [
+            dict.fromkeys(ALERT_COLUMNS, None)
+            | {
+                "alert_id": "a2",
+                "week_start": older_week,
+                "company": "A",
+                "product": "P",
+                "issue": "I",
+                "n": 60,
+                "expected": 10.0,
+                "score": 6.0,
+            }
+        ]
+    )
     monkeypatch.setattr(daily, "detect_current", lambda snapshot, as_of: fake)
     deps, _, _ = make_deps(tmp_path)
     run_daily(deps)
