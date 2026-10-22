@@ -1,0 +1,1001 @@
+{
+  "sample_docs": 40019,
+  "corpus_docs": 1053433,
+  "topics": 61,
+  "topic_names": {
+    "llm": 59,
+    "keywords": 2
+  },
+  "distillation": {
+    "test_docs": 8268,
+    "topics": 61,
+    "text_classifier": {
+      "accuracy": 0.7128688921141751,
+      "macro_f1": 0.6885674274691446
+    },
+    "product_issue_baseline": {
+      "accuracy": 0.28096274794388004,
+      "macro_f1": 0.12950086111635015
+    }
+  },
+  "lookup_pairs": 187,
+  "minutes": 18.0,
+  "topic_list": [
+    {
+      "topic": 9,
+      "label": "Banking fraud complaints",
+      "keywords": [
+        "boa",
+        "bofa",
+        "robinhood",
+        "sofi",
+        "atm",
+        "marcus",
+        "citizens bank",
+        "bmo"
+      ],
+      "complaints_in_corpus": 100176,
+      "sample_docs": 2477
+    },
+    {
+      "topic": 1,
+      "label": "Mortgage Billing and Payment Issues",
+      "keywords": [
+        "appraisal",
+        "loan modification",
+        "phh",
+        "cooper",
+        "mortgage company",
+        "mr cooper",
+        "mortgage payment",
+        "sps"
+      ],
+      "complaints_in_corpus": 69294,
+      "sample_docs": 2192
+    },
+    {
+      "topic": 0,
+      "label": "Vehicle repossession dispute",
+      "keywords": [
+        "dealership",
+        "repossession",
+        "repossessed",
+        "santander",
+        "warranty",
+        "dealer",
+        "credit acceptance",
+        "gap"
+      ],
+      "complaints_in_corpus": 64250,
+      "sample_docs": 2048
+    },
+    {
+      "topic": 8,
+      "label": "Fraudulent Account Theft",
+      "keywords": [
+        "fraudulent accounts",
+        "theft account",
+        "result identity",
+        "date inquiry",
+        "605b",
+        "ftc identity",
+        "account routing",
+        "fraudulent information"
+      ],
+      "complaints_in_corpus": 62920,
+      "sample_docs": 1790
+    },
+    {
+      "topic": 10,
+      "label": "Banking Dispute Report",
+      "keywords": [
+        "disputed information",
+        "611",
+        "usc 1681i",
+        "obligor",
+        "cal",
+        "dispute inaccurate",
+        "accuracy information",
+        "completeness"
+      ],
+      "complaints_in_corpus": 62552,
+      "sample_docs": 1602
+    },
+    {
+      "topic": 17,
+      "label": "Credit Collection Issues",
+      "keywords": [
+        "collection credit",
+        "collection services",
+        "ic",
+        "report collection",
+        "collections account",
+        "credence",
+        "credit collection",
+        "collection agencies"
+      ],
+      "complaints_in_corpus": 55604,
+      "sample_docs": 1715
+    },
+    {
+      "topic": 2,
+      "label": "navient, nelnet, student loans, forgiveness",
+      "keywords": [
+        "navient",
+        "nelnet",
+        "student loans",
+        "forgiveness",
+        "education",
+        "loan forgiveness",
+        "department education",
+        "students"
+      ],
+      "complaints_in_corpus": 40060,
+      "sample_docs": 1548
+    },
+    {
+      "topic": 6,
+      "label": "Repeated Calls and Billing Issues",
+      "keywords": [
+        "stop calling",
+        "caller",
+        "different numbers",
+        "asked stop",
+        "calls day",
+        "harris",
+        "received calls",
+        "repeated calls"
+      ],
+      "complaints_in_corpus": 39024,
+      "sample_docs": 1286
+    },
+    {
+      "topic": 28,
+      "label": "Fraudulent charges dispute",
+      "keywords": [
+        "proof debt",
+        "verification debt",
+        "say owe",
+        "request validation",
+        "validation request",
+        "dispute debt",
+        "sent debt",
+        "invalidated"
+      ],
+      "complaints_in_corpus": 38288,
+      "sample_docs": 1209
+    },
+    {
+      "topic": 7,
+      "label": "Credit Inquiry Abuse",
+      "keywords": [
+        "hard inquiries",
+        "inquiries credit",
+        "unauthorized inquiries",
+        "credit inquiry",
+        "inquires",
+        "credit inquiries",
+        "soft",
+        "date inquiry"
+      ],
+      "complaints_in_corpus": 37546,
+      "sample_docs": 1168
+    },
+    {
+      "topic": 3,
+      "label": "Chase Account Issues",
+      "keywords": [
+        "called chase",
+        "account chase",
+        "jp",
+        "morgan",
+        "jp morgan",
+        "morgan chase",
+        "chase credit",
+        "contacted chase"
+      ],
+      "complaints_in_corpus": 31704,
+      "sample_docs": 1222
+    },
+    {
+      "topic": 15,
+      "label": "Debt Collection Disputes",
+      "keywords": [
+        "cease collection",
+        "fdcpa 15",
+        "request validation",
+        "debt including",
+        "collection activities",
+        "1692c",
+        "address original",
+        "verification debt"
+      ],
+      "complaints_in_corpus": 31261,
+      "sample_docs": 960
+    },
+    {
+      "topic": 4,
+      "label": "Capital One Account Issues",
+      "keywords": [
+        "capital credit",
+        "called capital",
+        "capital bank",
+        "account capital",
+        "capitalone",
+        "capitol",
+        "capital account",
+        "contacted capital"
+      ],
+      "complaints_in_corpus": 30506,
+      "sample_docs": 1133
+    },
+    {
+      "topic": 31,
+      "label": "AMEX Gift Card Issues",
+      "keywords": [
+        "amex",
+        "gift card",
+        "gift cards",
+        "replacement card",
+        "annual fee",
+        "express card",
+        "netspend",
+        "tried use"
+      ],
+      "complaints_in_corpus": 29054,
+      "sample_docs": 965
+    },
+    {
+      "topic": 16,
+      "label": "Cash App Account Theft and Resolution Issues",
+      "keywords": [
+        "cash app",
+        "address fraud",
+        "leaving account",
+        "measures prevent",
+        "error resolution",
+        "significant inconvenience",
+        "did comply",
+        "inconvenience financial"
+      ],
+      "complaints_in_corpus": 27283,
+      "sample_docs": 437
+    },
+    {
+      "topic": 5,
+      "label": "Wells Fargo Overdraft Issues",
+      "keywords": [
+        "wf",
+        "fargo bank",
+        "account wells",
+        "fargo account",
+        "called wells",
+        "wellsfargo",
+        "contacted wells",
+        "atm"
+      ],
+      "complaints_in_corpus": 26358,
+      "sample_docs": 1015
+    },
+    {
+      "topic": 52,
+      "label": "Santander account issues",
+      "keywords": [
+        "opened balance",
+        "balance balance",
+        "balance updated",
+        "reporting balance",
+        "santander",
+        "closed balance",
+        "open balance",
+        "status updated"
+      ],
+      "complaints_in_corpus": 25865,
+      "sample_docs": 942
+    },
+    {
+      "topic": 12,
+      "label": "Late Payment Reporting Issues",
+      "keywords": [
+        "day late",
+        "reported late",
+        "payment reported",
+        "1666b",
+        "obligor",
+        "late credit",
+        "remove late",
+        "inaccurate late"
+      ],
+      "complaints_in_corpus": 25004,
+      "sample_docs": 876
+    },
+    {
+      "topic": 30,
+      "label": "Late Charges and Auto-Payment Issues",
+      "keywords": [
+        "comenity bank",
+        "charged late",
+        "auto pay",
+        "charge late",
+        "minimum payment",
+        "boa",
+        "autopayment",
+        "automatic payment"
+      ],
+      "complaints_in_corpus": 24966,
+      "sample_docs": 883
+    },
+    {
+      "topic": 11,
+      "label": "Banking issues and account closures",
+      "keywords": [
+        "citibank",
+        "citi bank",
+        "best buy",
+        "called citi",
+        "called citibank",
+        "reservation",
+        "home depot",
+        "depot"
+      ],
+      "complaints_in_corpus": 18865,
+      "sample_docs": 793
+    },
+    {
+      "topic": 22,
+      "label": "Fraudulent deposit scam",
+      "keywords": [
+        "deposited check",
+        "cashiers",
+        "cashier",
+        "check bank",
+        "cashiers check",
+        "boa",
+        "deposit check",
+        "cashier check"
+      ],
+      "complaints_in_corpus": 15155,
+      "sample_docs": 624
+    },
+    {
+      "topic": 13,
+      "label": "Cash App issues",
+      "keywords": [
+        "cash app",
+        "app account",
+        "account cash",
+        "apps",
+        "unauthorized transactions",
+        "square",
+        "money cash",
+        "terms service"
+      ],
+      "complaints_in_corpus": 14566,
+      "sample_docs": 605
+    },
+    {
+      "topic": 29,
+      "label": "Zelle Dispute Handling Issues",
+      "keywords": [
+        "zelle",
+        "lost funds",
+        "significant issues",
+        "exploit",
+        "handling disputes",
+        "failed investigate",
+        "express concerns",
+        "highlighting"
+      ],
+      "complaints_in_corpus": 14222,
+      "sample_docs": 253
+    },
+    {
+      "topic": 55,
+      "label": "Fraudulent reporting",
+      "keywords": [
+        "falsely reporting",
+        "proper validation",
+        "623",
+        "reporting collection",
+        "fcra fdcpa",
+        "reporting debt",
+        "100634",
+        "cfr 100634"
+      ],
+      "complaints_in_corpus": 14192,
+      "sample_docs": 656
+    },
+    {
+      "topic": 20,
+      "label": "Healthcare Billing Issues",
+      "keywords": [
+        "medical debt",
+        "doctor",
+        "hipaa",
+        "hippa",
+        "health insurance",
+        "medical information",
+        "medical records",
+        "healthcare"
+      ],
+      "complaints_in_corpus": 13973,
+      "sample_docs": 648
+    },
+    {
+      "topic": 14,
+      "label": "Fraudulent Account Access and Theft",
+      "keywords": [
+        "paypal credit",
+        "account permanently",
+        "user agreement",
+        "transaction id",
+        "chargeback",
+        "account reason",
+        "wi",
+        "release funds"
+      ],
+      "complaints_in_corpus": 13567,
+      "sample_docs": 554
+    },
+    {
+      "topic": 27,
+      "label": "Wage Garnishment",
+      "keywords": [
+        "garnishment",
+        "summons",
+        "garnished",
+        "plaintiff",
+        "garnish",
+        "wage",
+        "wage garnishment",
+        "garnish wages"
+      ],
+      "complaints_in_corpus": 12334,
+      "sample_docs": 642
+    },
+    {
+      "topic": 19,
+      "label": "Navy Federal Practices Unfair Overdraft Fees",
+      "keywords": [
+        "navy federal",
+        "nfcu",
+        "regarding multiple",
+        "aligns",
+        "practices unfair",
+        "overdraft fees",
+        "available funds",
+        "believe practices"
+      ],
+      "complaints_in_corpus": 11828,
+      "sample_docs": 388
+    },
+    {
+      "topic": 46,
+      "label": "Shipment issues and missing items",
+      "keywords": [
+        "label",
+        "tv",
+        "klarna",
+        "amex",
+        "shipment",
+        "chargeback",
+        "best buy",
+        "ship"
+      ],
+      "complaints_in_corpus": 11664,
+      "sample_docs": 537
+    },
+    {
+      "topic": 44,
+      "label": "Credit Reporting Disputes",
+      "keywords": [
+        "1681 section",
+        "section states",
+        "agency furnish",
+        "written instructions",
+        "604",
+        "section 604",
+        "602",
+        "section 602"
+      ],
+      "complaints_in_corpus": 10381,
+      "sample_docs": 347
+    },
+    {
+      "topic": 35,
+      "label": "Bank inquiries and collections disputes",
+      "keywords": [
+        "hard inquiries",
+        "accounts collections",
+        "result identity",
+        "sofi",
+        "date date",
+        "611",
+        "cars",
+        "cal"
+      ],
+      "complaints_in_corpus": 10179,
+      "sample_docs": 589
+    },
+    {
+      "topic": 53,
+      "label": "Consumer data breach disclosures",
+      "keywords": [
+        "nonpublic personal",
+        "nonaffiliated",
+        "usc 6802",
+        "consumer given",
+        "information nonaffiliated",
+        "nonaffiliated party",
+        "right opt",
+        "consumer exercise"
+      ],
+      "complaints_in_corpus": 10104,
+      "sample_docs": 393
+    },
+    {
+      "topic": 18,
+      "label": "Chime Credit Builder Issues",
+      "keywords": [
+        "chime",
+        "credit builder",
+        "builder",
+        "unauthorized transactions",
+        "error occurred",
+        "rebuttal",
+        "atm",
+        "claim id"
+      ],
+      "complaints_in_corpus": 9401,
+      "sample_docs": 401
+    },
+    {
+      "topic": 49,
+      "label": "Payment Issues",
+      "keywords": [
+        "wise",
+        "authorize payment",
+        "descriptions",
+        "payment dont",
+        "know sent",
+        "transaction did",
+        "western",
+        "money transfer"
+      ],
+      "complaints_in_corpus": 8861,
+      "sample_docs": 460
+    },
+    {
+      "topic": 33,
+      "label": "Credit Reporting Violations",
+      "keywords": [
+        "1681 section",
+        "plan late",
+        "treat payment",
+        "creditor treat",
+        "credit plan",
+        "late purpose",
+        "1666b creditor",
+        "furnish account"
+      ],
+      "complaints_in_corpus": 8481,
+      "sample_docs": 265
+    },
+    {
+      "topic": 26,
+      "label": "Escrow Discrepancies",
+      "keywords": [
+        "escrow",
+        "escrow account",
+        "property taxes",
+        "analysis",
+        "property tax",
+        "shortage",
+        "escrow analysis",
+        "mortgage company"
+      ],
+      "complaints_in_corpus": 8301,
+      "sample_docs": 379
+    },
+    {
+      "topic": 24,
+      "label": "Apartment Complex Credit Issues",
+      "keywords": [
+        "complex",
+        "apartment complex",
+        "moveout",
+        "tenant",
+        "national credit",
+        "procollect",
+        "keys",
+        "credit systems"
+      ],
+      "complaints_in_corpus": 8127,
+      "sample_docs": 444
+    },
+    {
+      "topic": 43,
+      "label": "Balance Transfer Issues",
+      "keywords": [
+        "promotional",
+        "balance transfer",
+        "promotion",
+        "cash advance",
+        "balance transfers",
+        "minimum payment",
+        "promo",
+        "annual fee"
+      ],
+      "complaints_in_corpus": 8043,
+      "sample_docs": 418
+    },
+    {
+      "topic": 41,
+      "label": "Amazon CareCredit issues",
+      "keywords": [
+        "amazon",
+        "care credit",
+        "promotional",
+        "promotion",
+        "mastercard",
+        "google",
+        "store credit",
+        "utilization"
+      ],
+      "complaints_in_corpus": 7295,
+      "sample_docs": 337
+    },
+    {
+      "topic": 32,
+      "label": "Overdraft Fees Misunderstanding",
+      "keywords": [
+        "overdraft fees",
+        "overdraft fee",
+        "charged overdraft",
+        "overdraft protection",
+        "overdrawn",
+        "regions",
+        "nsf",
+        "overdrafts"
+      ],
+      "complaints_in_corpus": 7093,
+      "sample_docs": 401
+    },
+    {
+      "topic": 21,
+      "label": "Chargeback disputes",
+      "keywords": [
+        "discover card",
+        "discover bank",
+        "discover credit",
+        "called discover",
+        "account discover",
+        "discover account",
+        "tax returns",
+        "chargedoff"
+      ],
+      "complaints_in_corpus": 6568,
+      "sample_docs": 336
+    },
+    {
+      "topic": 23,
+      "label": "Resurgent Capital LLC Account Issues",
+      "keywords": [
+        "lvnv",
+        "lvnv funding",
+        "funding llc",
+        "resurgent",
+        "resurgent capital",
+        "capital services",
+        "cease collection",
+        "llc account"
+      ],
+      "complaints_in_corpus": 6509,
+      "sample_docs": 320
+    },
+    {
+      "topic": 39,
+      "label": "Bonus fraud",
+      "keywords": [
+        "bonus",
+        "promotion",
+        "promotional",
+        "direct deposits",
+        "promo",
+        "account opening",
+        "earn",
+        "qualifying"
+      ],
+      "complaints_in_corpus": 6385,
+      "sample_docs": 287
+    },
+    {
+      "topic": 25,
+      "label": "Credit Dispute and Management Issues",
+      "keywords": [
+        "midland",
+        "midland credit",
+        "credit management",
+        "bmo",
+        "proper validation",
+        "coercive",
+        "right collect",
+        "debt including"
+      ],
+      "complaints_in_corpus": 6287,
+      "sample_docs": 303
+    },
+    {
+      "topic": 38,
+      "label": "Portfolio Recovery Issues",
+      "keywords": [
+        "portfolio recovery",
+        "recovery associates",
+        "associates llc",
+        "cavalry",
+        "portfolio servicing",
+        "assoc",
+        "select portfolio",
+        "portfolio services"
+      ],
+      "complaints_in_corpus": 6262,
+      "sample_docs": 328
+    },
+    {
+      "topic": 36,
+      "label": "Homeowner insurance disputes",
+      "keywords": [
+        "escrow",
+        "flood",
+        "homeowners",
+        "hazard",
+        "premium",
+        "escrow account",
+        "insurance policy",
+        "homeowners insurance"
+      ],
+      "complaints_in_corpus": 5846,
+      "sample_docs": 291
+    },
+    {
+      "topic": 34,
+      "label": "PNC Bank Overdraft Fees and ATM Issues",
+      "keywords": [
+        "pnc",
+        "pnc bank",
+        "bbva",
+        "bank pnc",
+        "pennies",
+        "overdraft fees",
+        "teller",
+        "atm"
+      ],
+      "complaints_in_corpus": 4461,
+      "sample_docs": 231
+    },
+    {
+      "topic": 40,
+      "label": "Identity Theft Reporting",
+      "keywords": [
+        "lexis",
+        "fccpa",
+        "fla",
+        "stat",
+        "immediate deletion",
+        "1681g",
+        "violations fcra",
+        "1681s2 1681i"
+      ],
+      "complaints_in_corpus": 3774,
+      "sample_docs": 213
+    },
+    {
+      "topic": 37,
+      "label": "barclays, delaware, hsbc, balance transfer",
+      "keywords": [
+        "barclays",
+        "delaware",
+        "hsbc",
+        "balance transfer",
+        "loyalty",
+        "fraud investigation",
+        "annual fee",
+        "statement credit"
+      ],
+      "complaints_in_corpus": 3322,
+      "sample_docs": 221
+    },
+    {
+      "topic": 54,
+      "label": "Bankruptcy Complaints",
+      "keywords": [
+        "apple",
+        "sachs",
+        "goldman",
+        "goldman sachs",
+        "hsbc",
+        "bank usa",
+        "macy",
+        "mastercard"
+      ],
+      "complaints_in_corpus": 3255,
+      "sample_docs": 211
+    },
+    {
+      "topic": 42,
+      "label": "1099C Complaints",
+      "keywords": [
+        "1099c",
+        "form 1099c",
+        "cancellation debt",
+        "1099c form",
+        "1099",
+        "irs form",
+        "chargedoff",
+        "debt canceled"
+      ],
+      "complaints_in_corpus": 3231,
+      "sample_docs": 183
+    },
+    {
+      "topic": 45,
+      "label": "Crypto authentication issues",
+      "keywords": [
+        "crypto",
+        "bitcoin",
+        "cryptocurrency",
+        "manipulate",
+        "coin",
+        "coins",
+        "authentication",
+        "account locked"
+      ],
+      "complaints_in_corpus": 3155,
+      "sample_docs": 154
+    },
+    {
+      "topic": 47,
+      "label": "Jefferson Capital LLC",
+      "keywords": [
+        "jefferson",
+        "jefferson capital",
+        "capital systems",
+        "capital llc",
+        "exeter finance",
+        "exeter",
+        "capitol",
+        "desist communication"
+      ],
+      "complaints_in_corpus": 2991,
+      "sample_docs": 167
+    },
+    {
+      "topic": 59,
+      "label": "ATM MISHAPS",
+      "keywords": [
+        "atm",
+        "teller",
+        "huntington",
+        "atm machine",
+        "atm card",
+        "atm withdrawal",
+        "keybank",
+        "bank atm"
+      ],
+      "complaints_in_corpus": 2855,
+      "sample_docs": 202
+    },
+    {
+      "topic": 60,
+      "label": "TD Bank Issues",
+      "keywords": [
+        "td bank",
+        "robinhood",
+        "suntrust",
+        "contacted td",
+        "bank fraud",
+        "ending account",
+        "square",
+        "facial"
+      ],
+      "complaints_in_corpus": 2596,
+      "sample_docs": 169
+    },
+    {
+      "topic": 48,
+      "label": "Venmo Account Suspension",
+      "keywords": [
+        "bmo",
+        "suspended account",
+        "account suspended",
+        "unfreeze",
+        "froze account",
+        "user agreement",
+        "unfreeze account",
+        "roommate"
+      ],
+      "complaints_in_corpus": 2358,
+      "sample_docs": 132
+    },
+    {
+      "topic": 51,
+      "label": "Zelle Payment Issues",
+      "keywords": [
+        "zelle",
+        "puppy",
+        "sending money",
+        "mobile number",
+        "wrong person",
+        "intended recipient",
+        "money transfer",
+        "money wrong"
+      ],
+      "complaints_in_corpus": 2282,
+      "sample_docs": 118
+    },
+    {
+      "topic": 57,
+      "label": "Student data breach",
+      "keywords": [
+        "educational",
+        "education",
+        "privacy act",
+        "unauthorized access",
+        "rights privacy",
+        "department education",
+        "loan information",
+        "irs tax"
+      ],
+      "complaints_in_corpus": 2065,
+      "sample_docs": 120
+    },
+    {
+      "topic": 58,
+      "label": "Credit Karma disputes",
+      "keywords": [
+        "acima",
+        "ar",
+        "karma",
+        "rise",
+        "dave",
+        "credit karma",
+        "loan id",
+        "gym"
+      ],
+      "complaints_in_corpus": 1794,
+      "sample_docs": 147
+    },
+    {
+      "topic": 50,
+      "label": "Mortgage Servicing Claims and Modifications",
+      "keywords": [
+        "mortgage servicing",
+        "purported",
+        "escrow",
+        "specialized loan",
+        "specialized",
+        "newrez",
+        "claimants",
+        "loan modification"
+      ],
+      "complaints_in_corpus": 1590,
+      "sample_docs": 140
+    },
+    {
+      "topic": 56,
+      "label": "Bankruptcy",
+      "keywords": [
+        "fargo bank",
+        "loan modification",
+        "home mortgage",
+        "foreclosed",
+        "escrow",
+        "appraisal",
+        "chief",
+        "wf"
+      ],
+      "complaints_in_corpus": 632,
+      "sample_docs": 144
+    }
+  ]
+}

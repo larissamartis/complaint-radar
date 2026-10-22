@@ -135,7 +135,7 @@
       "peak_week": "2025-01-13",
       "complaints": 108,
       "texts": 80,
-      "near_dup_share": 0.362,
+      "near_dup_share": 0.35,
       "near_dup_share_before": 0.0,
       "label": "template_amplified"
     },
@@ -231,7 +231,7 @@
       "peak_week": "2025-01-13",
       "complaints": 30785,
       "texts": 26434,
-      "near_dup_share": 0.936,
+      "near_dup_share": 0.937,
       "near_dup_share_before": 0.0,
       "label": "template_amplified"
     },
@@ -316,7 +316,7 @@
       "complaints": 77,
       "texts": 30,
       "near_dup_share": 0.667,
-      "near_dup_share_before": 0.152,
+      "near_dup_share_before": 0.174,
       "label": "template_amplified"
     },
     {
@@ -339,7 +339,7 @@
       "peak_week": "2025-01-13",
       "complaints": 4497,
       "texts": 3587,
-      "near_dup_share": 0.429,
+      "near_dup_share": 0.43,
       "near_dup_share_before": 0.0,
       "label": "template_amplified"
     },
@@ -723,7 +723,7 @@
       "peak_week": "2025-01-13",
       "complaints": 757,
       "texts": 482,
-      "near_dup_share": 0.168,
+      "near_dup_share": 0.17,
       "near_dup_share_before": 0.0,
       "label": "organic"
     },
@@ -735,8 +735,8 @@
       "peak_week": "2025-10-06",
       "complaints": 799,
       "texts": 561,
-      "near_dup_share": 0.79,
-      "near_dup_share_before": 0.453,
+      "near_dup_share": 0.791,
+      "near_dup_share_before": 0.46,
       "label": "template_amplified"
     },
     {
@@ -819,7 +819,7 @@
       "peak_week": "2025-01-13",
       "complaints": 140,
       "texts": 98,
-      "near_dup_share": 0.337,
+      "near_dup_share": 0.347,
       "near_dup_share_before": 0.0,
       "label": "template_amplified"
     },
@@ -927,7 +927,7 @@
       "peak_week": "2025-03-10",
       "complaints": 236,
       "texts": 101,
-      "near_dup_share": 0.198,
+      "near_dup_share": 0.208,
       "near_dup_share_before": 0.0,
       "label": "organic"
     },
@@ -1047,7 +1047,7 @@
       "peak_week": "2025-01-13",
       "complaints": 8306,
       "texts": 6865,
-      "near_dup_share": 0.755,
+      "near_dup_share": 0.757,
       "near_dup_share_before": 0.0,
       "label": "template_amplified"
     },
@@ -1071,7 +1071,7 @@
       "peak_week": "2025-01-13",
       "complaints": 60,
       "texts": 34,
-      "near_dup_share": 0.206,
+      "near_dup_share": 0.176,
       "near_dup_share_before": 0.0,
       "label": "organic"
     },
@@ -1107,7 +1107,7 @@
       "peak_week": "2024-04-29",
       "complaints": 501,
       "texts": 298,
-      "near_dup_share": 0.077,
+      "near_dup_share": 0.074,
       "near_dup_share_before": 0.0,
       "label": "organic"
     },
@@ -1215,7 +1215,7 @@
       "peak_week": "2025-03-10",
       "complaints": 513,
       "texts": 239,
-      "near_dup_share": 0.142,
+      "near_dup_share": 0.172,
       "near_dup_share_before": 0.0,
       "label": "organic"
     },
