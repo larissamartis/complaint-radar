@@ -37,3 +37,20 @@ def test_lookup_has_top_topics_with_examples():
 def test_small_pairs_are_left_out_of_lookup():
     docs = toy_docs(20)
     assert build_lookup(docs, {}) == {}
+
+
+def test_name_topic_accepts_short_llm_name_and_rejects_rambling():
+    from complaint_radar.text.build import name_topic
+
+    class Says:
+        def __init__(self, reply):
+            self.reply = reply
+
+        def generate(self, prompt):
+            return self.reply
+
+    kw = ["overdraft", "fee", "charged", "balance", "refund"]
+    assert name_topic(kw, ["x"], Says('"Overdraft fees charged twice"')) == ("Overdraft fees charged twice", "llm")
+    long = "This topic is about customers who were charged many different kinds of fees by their bank"
+    assert name_topic(kw, ["x"], Says(long)) == ("overdraft, fee, charged, balance", "keywords")
+    assert name_topic(kw, ["x"], None)[1] == "keywords"

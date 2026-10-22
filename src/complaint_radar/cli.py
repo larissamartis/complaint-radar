@@ -164,3 +164,19 @@ def pd_ts(x):
     import pandas as pd
 
     return pd.to_datetime(x)
+
+
+@app.command("build-topics")
+def build_topics_cmd() -> None:
+    """Fit topics on the embedded sample, name them, label the full corpus and write the topic lookup."""
+    from complaint_radar.summarize.ollama import OllamaClient
+    from complaint_radar.text.build import run_build
+
+    llm = OllamaClient(timeout=180)
+    res = run_build(
+        config.lake_dir() / "text",
+        Path(__file__).resolve().parent / "data" / "topic_lookup.json",
+        Path("docs/results/topics.json"),
+        llm=llm if llm.available() else None,
+    )
+    typer.echo({k: v for k, v in res.items() if k != "topic_list"})
