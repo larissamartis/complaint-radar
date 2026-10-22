@@ -262,3 +262,16 @@ def test_wave_flag_counts_alerts_already_loaded_this_week(tmp_path, monkeypatch)
     run_daily(deps, force=True)
     fifth = [a for a in deps.warehouse.alerts if a["alert_id"] == "a4"][0]
     assert fifth["wave_companies"] == 5 and fifth["pattern"] == "cross_company_wave"
+
+
+def test_scoring_failure_does_not_stop_alerting(tmp_path, monkeypatch):
+    import complaint_radar.pipeline.daily as daily
+
+    def boom(*a, **k):
+        raise RuntimeError("model broke")
+
+    monkeypatch.setattr(daily, "score_new_complaints", boom)
+    deps, _, _ = make_deps(tmp_path)
+    run = run_daily(deps)
+    assert run["status"] == "success" and "score_failed: RuntimeError" in run["message"]
+    assert deps.warehouse.vintages  # later steps still ran

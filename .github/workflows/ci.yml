@@ -50,5 +50,10 @@ jobs:
             sleep 2
           done
           curl -fs http://127.0.0.1:8000/health | grep '"status":"ok"'
-          curl -fs "http://127.0.0.1:8000/alerts" | grep '\[\]'
+          if [ -f src/complaint_radar/data/triage_model.joblib ]; then
+            curl -fs http://127.0.0.1:8000/health | grep '"model_loaded":true'
+            curl -fs -X POST http://127.0.0.1:8000/score -H 'Content-Type: application/json' \
+              -d '{"complaints":[{"date_received":"2026-10-20","product":"Credit card","issue":"Fees","company":"Bank B"}]}' \
+              | grep relief_probability
+          fi
           docker logs api | tail -20

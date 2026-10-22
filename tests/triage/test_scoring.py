@@ -70,3 +70,28 @@ def test_no_model_means_no_scoring(tmp_path, monkeypatch):
     monkeypatch.setattr(scoring, "load_triage_model", lambda: None)
     keys = write(tmp_path, "keys.parquet", "SELECT 1::BIGINT AS complaint_id, 'h' AS row_hash")
     assert score_new_complaints(changes(tmp_path), keys, date(2026, 10, 21), Wh()) is None
+
+
+def test_scores_record_status_and_age(tmp_path):
+    ch = write(
+        tmp_path,
+        "ch.parquet",
+        "SELECT * FROM (VALUES (7, DATE '2026-10-01', 'Credit card', 'Fees', 'Bank B', 'Closed with explanation'),"
+        "(8, DATE '2026-10-19', 'Mortgage', 'Billing', NULL, 'In progress')) "
+        "t(complaint_id, date_received, product, issue, company, company_response)",
+    )
+    keys = write(tmp_path, "keys.parquet", "SELECT NULL::BIGINT AS complaint_id, NULL AS row_hash WHERE false")
+    wh = Wh()
+    out = score_new_complaints(ch, keys, date(2026, 10, 21), wh, model=model())
+    rows = {r["complaint_id"]: r for r in wh.frames["triage_scores"]}
+    assert out["scored"] == 2 and out["already_closed"] == 1  # NULL company is kept, not dropped
+    assert rows[7]["days_since_received"] == 20 and rows[7]["already_closed"]
+    assert not rows[8]["already_closed"]
+
+
+def test_priority_rule_is_shared_and_safe():
+    from complaint_radar.triage.model import priority
+
+    q = [i / 10 for i in range(11)]
+    assert priority(0.95, q) == "high" and priority(0.75, q) == "medium" and priority(0.1, q) == "low"
+    assert priority(0.5, []) == "unknown" and priority(0.5, [0.0] * 3) == "unknown"

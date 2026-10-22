@@ -105,10 +105,16 @@ def run_daily(deps: Deps, as_of: date | None = None, window_days: int = HOT_WIND
         run["step"] = "dbt"
         deps.run_dbt()
 
+        # Scoring is a side product: a failure here is recorded but must not stop alerting.
         run["step"] = "score"
-        scored = score_new_complaints(changes, keys, as_of, wh)
-        if scored is not None:
-            log.info("triage: scored %d new complaints; drift %s", scored["scored"], scored["drift"])
+        score_note = ""
+        try:
+            scored = score_new_complaints(changes, keys, as_of, wh)
+            if scored is not None:
+                log.info("triage: scored %d new complaints; drift %s", scored["scored"], scored["drift"])
+        except Exception as exc:
+            log.exception("triage scoring failed")
+            score_note = f"; score_failed: {type(exc).__name__}"
 
         run["step"] = "vintage"
         if not wh.has_vintage(as_of):
@@ -125,7 +131,7 @@ def run_daily(deps: Deps, as_of: date | None = None, window_days: int = HOT_WIND
             run["step"] = "summarize"
             new = enrich_alerts(new, deps.llm)
             wh.load_alerts(new, as_of, run["run_id"], _now())
-        run["message"] = f"alerts for week {week}: {len(new)} new, {len(found)} total"
+        run["message"] = f"alerts for week {week}: {len(new)} new, {len(found)} total{score_note}"
         log.info(run["message"])
 
         run.update(status="success", step="done")

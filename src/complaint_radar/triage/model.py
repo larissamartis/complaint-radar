@@ -29,6 +29,16 @@ LGBM_PARAMS = {
 }
 
 
+def priority(p: float, quantiles: list[float]) -> str:
+    """'high' = top 10% of validation-period scores (>= q90), 'medium' = next 20% (>= q70), else 'low'.
+
+    Isotonic calibration produces plateaus, so ties at the cut-off can make 'high' a little more than 10%.
+    """
+    if len(quantiles) != 11:
+        return "unknown"
+    return "high" if p >= quantiles[9] else "medium" if p >= quantiles[7] else "low"
+
+
 def _as_categories(frame: pd.DataFrame, categories: dict[str, list[str]]) -> pd.DataFrame:
     out = frame.copy()
     for col in CATEGORICAL:
@@ -65,7 +75,12 @@ class TriageModel:
         return self.calibrator.predict(raw) if self.calibrator is not None else raw
 
     def reasons(self, df: pd.DataFrame, top: int = 3) -> list[list[dict]]:
-        """Top features pushing each score up or down (LightGBM's built-in SHAP values)."""
+        """Top features pushing each score up or down (LightGBM's built-in SHAP values).
+
+        `effect` is in log-odds of the uncalibrated model: the sign shows direction (calibration is monotone),
+        the size is relative, not a probability. Categories unseen in training show their raw value but were
+        treated as missing by the model.
+        """
         frame = build_frame(df, self.grouper)
         contrib = self.booster.predict(_as_categories(frame, self.categories), pred_contrib=True)[:, :-1]
         out = []

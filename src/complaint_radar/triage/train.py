@@ -90,9 +90,16 @@ def split(df: pd.DataFrame) -> dict[str, pd.DataFrame]:
 
 def train_and_evaluate(df: pd.DataFrame, model_path: Path, results_path: Path, seed: int = 0) -> dict:
     parts = split(df)
-    tr, va, te = parts["train"], parts["valid"], parts["test"]
+    del df  # keep only the split copies in memory
+    tr, va, te = parts.pop("train"), parts.pop("valid"), parts.pop("test")
     y_tr, y_va, y_te = (p[TARGET].astype(int).to_numpy() for p in (tr, va, te))
     log.info("rows train=%d valid=%d test=%d", len(tr), len(va), len(te))
+
+    # Narratives are only needed for the text model's training sample and the test rows.
+    tr_text = tr[tr["narrative"].notna()]
+    if len(tr_text) > TEXT_TRAIN_ROWS:
+        tr_text = tr_text.sample(TEXT_TRAIN_ROWS, random_state=seed)
+    tr, va = tr.drop(columns="narrative"), va.drop(columns="narrative")
 
     base = baseline_rates(tr, y_tr)
     grouper = CompanyGrouper().fit(tr["company"].fillna("(missing)"))
@@ -103,9 +110,6 @@ def train_and_evaluate(df: pd.DataFrame, model_path: Path, results_path: Path, s
     lgbm = TriageModel.fit(tr, y_tr).calibrate(va, y_va)
 
     with_text = te["narrative"].notna().to_numpy()
-    tr_text = tr[tr["narrative"].notna()]
-    if len(tr_text) > TEXT_TRAIN_ROWS:
-        tr_text = tr_text.sample(TEXT_TRAIN_ROWS, random_state=seed)
     tfidf = TfidfVectorizer(ngram_range=(1, 2), min_df=5, max_features=100_000, sublinear_tf=True)
     xt_tr = sparse.hstack(
         [tfidf.fit_transform(tr_text["narrative"]), ohe.transform(build_frame(tr_text, grouper))]
@@ -121,6 +125,8 @@ def train_and_evaluate(df: pd.DataFrame, model_path: Path, results_path: Path, s
     }
     results = {
         "splits": SPLITS,
+        "population": "non-bureau complaints with a known outcome; in-progress and untimely complaints "
+        "(no outcome) are excluded from training, calibration and test",
         "features": "intake-time fields only: product, sub-product, issue, sub-issue, company, state, "
         "channel, tags, month, weekday",
         "test_all_rows": {name: metrics(y_te, p) for name, p in preds.items()},

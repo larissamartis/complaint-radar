@@ -9,7 +9,6 @@ GET  /alerts   latest emerging-issue alerts (from the serving file written by th
 import json
 import os
 from datetime import date
-from functools import lru_cache
 from importlib import resources
 from pathlib import Path
 
@@ -18,7 +17,7 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from complaint_radar.summarize.enrich import topic_lookup
-from complaint_radar.triage.model import TriageModel
+from complaint_radar.triage.model import TriageModel, priority
 
 DEFAULT_MODEL = resources.files("complaint_radar") / "data" / "triage_model.joblib"
 
@@ -56,21 +55,18 @@ class ScoreResponse(BaseModel):
     scores: list[Score]
 
 
-def _priority(p: float, quantiles: list[float]) -> str:
-    """High = top 10% of the validation-period score distribution, medium = next 20%."""
-    if not quantiles:
-        return "unknown"
-    return "high" if p >= quantiles[9] else "medium" if p >= quantiles[7] else "low"
-
-
 def create_app(model_path: Path | None = None, alerts_path: Path | None = None, lookup: dict | None = None) -> FastAPI:
+    """`alerts_path` (or CR_ALERTS_PATH) points at the serving alerts file; in Docker, mount it as a volume."""
     model_path = Path(model_path or os.environ.get("CR_TRIAGE_MODEL", str(DEFAULT_MODEL)))
     alerts_path = Path(alerts_path or os.environ.get("CR_ALERTS_PATH", "data/serving/alerts.json"))
     app = FastAPI(title="Complaint Radar API", version="1.0")
+    loaded: dict[str, TriageModel] = {}
 
-    @lru_cache(maxsize=1)
     def model() -> TriageModel | None:
-        return TriageModel.load(model_path) if model_path.is_file() else None
+        # Cache only a successful load, so a model file added later is picked up without a restart.
+        if "m" not in loaded and model_path.is_file():
+            loaded["m"] = TriageModel.load(model_path)
+        return loaded.get("m")
 
     def topics() -> dict:
         return topic_lookup() if lookup is None else lookup
@@ -96,7 +92,7 @@ def create_app(model_path: Path | None = None, alerts_path: Path | None = None, 
         return ScoreResponse(
             model_version=str(m.metadata.get("trained_on")),
             scores=[
-                Score(relief_probability=round(float(p), 4), priority=_priority(float(p), quantiles), reasons=r)
+                Score(relief_probability=round(float(p), 4), priority=priority(float(p), quantiles), reasons=r)
                 for p, r in zip(probs, reasons, strict=True)
             ],
         )

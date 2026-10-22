@@ -172,3 +172,32 @@ def test_ensure_schema_adds_missing_alert_columns():
     schema_updates = [u for u in client.updated if u[1] == ["schema"]]
     assert schema_updates and schema_updates[0][0] == "alerts"
     assert {"summary", "pattern", "typical_topics"} <= set(schema_updates[0][2])
+
+
+def test_load_frame_converts_duckdb_dtypes(tmp_path):
+    import pandas as pd
+    import pyarrow.parquet as pq
+
+    from complaint_radar.storage.bigquery import TRIAGE_SCORES_ARROW
+
+    captured = {}
+
+    class Capture(FakeClient):
+        def load_table_from_file(self, f, destination, job_config=None):
+            captured["table"] = pq.read_table(f)
+            return FakeJob(rows=1)
+
+    df = pd.DataFrame(
+        {
+            "as_of": [date(2026, 10, 21)],
+            "complaint_id": [1],
+            "date_received": [pd.Timestamp("2026-10-01")],
+            "relief_probability": [0.3],
+            "already_closed": [True],
+            "company": [None],
+        }
+    )
+    BigQueryWarehouse(Capture(), "proj").load_frame(df, "triage_scores", TRIAGE_SCORES_ARROW)
+    t = captured["table"]
+    assert t.schema == TRIAGE_SCORES_ARROW
+    assert t.column("date_received")[0].as_py() == date(2026, 10, 1) and t.column("company")[0].as_py() is None

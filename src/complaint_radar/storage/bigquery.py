@@ -9,6 +9,7 @@ import tempfile
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 from google.cloud import bigquery
@@ -111,7 +112,13 @@ VINTAGES_ARROW = pa.schema(
         ("n_published", pa.int64()),
     ]
 )
-_BQ_TYPES = {pa.string(): "STRING", pa.date32(): "DATE", pa.float64(): "FLOAT64", pa.int64(): "INT64"}
+_BQ_TYPES = {
+    pa.string(): "STRING",
+    pa.date32(): "DATE",
+    pa.float64(): "FLOAT64",
+    pa.int64(): "INT64",
+    pa.bool_(): "BOOL",
+}
 ALERTS_SCHEMA = [bigquery.SchemaField(f.name, _BQ_TYPES.get(f.type, "TIMESTAMP")) for f in ALERTS_ARROW]
 
 
@@ -128,6 +135,9 @@ TRIAGE_SCORES_ARROW = pa.schema(
         ("relief_probability", pa.float64()),
         ("priority", pa.string()),
         ("model_version", pa.string()),
+        ("company_response", pa.string()),
+        ("days_since_received", pa.int64()),
+        ("already_closed", pa.bool_()),
     ]
 )
 DRIFT_ARROW = pa.schema(
@@ -260,7 +270,11 @@ class BigQueryWarehouse:
     def load_frame(self, df, table: str, arrow: pa.Schema) -> int:
         """Append a DataFrame to `table` with an explicit Arrow schema (load job; no streaming in the sandbox)."""
         cols = [f.name for f in arrow]
-        rows = df.reindex(columns=cols)
+        rows = df.reindex(columns=cols).copy()
+        for f in arrow:
+            if f.type == pa.date32():  # DuckDB/pandas hand back Timestamps; Arrow date32 needs datetime.date
+                parsed = pd.to_datetime(rows[f.name])
+                rows[f.name] = [d.date() if pd.notna(d) else None for d in parsed]
         rows = rows.astype(object).where(rows.notna(), None).to_dict("records")
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / f"{table}.parquet"
