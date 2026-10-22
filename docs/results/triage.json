@@ -1,0 +1,378 @@
+{
+  "splits": {
+    "train": [
+      "2019-01-01",
+      "2023-12-31"
+    ],
+    "valid": [
+      "2024-01-01",
+      "2024-12-31"
+    ],
+    "test": [
+      "2025-01-01",
+      "2025-12-31"
+    ]
+  },
+  "features": "intake-time fields only: product, sub-product, issue, sub-issue, company, state, channel, tags, month, weekday",
+  "test_all_rows": {
+    "baseline_product_issue_rate": {
+      "rows": 761880,
+      "base_rate": 0.17544232687562344,
+      "roc_auc": 0.5623450917924612,
+      "pr_auc": 0.2202539381236807,
+      "brier": 0.14512692293923027,
+      "precision_top10": 0.25565705885441276,
+      "lift_top10": 1.4572142504451393,
+      "calibration_deciles": [
+        {
+          "mean_score": 0.071,
+          "relief_rate": 0.114
+        },
+        {
+          "mean_score": 0.091,
+          "relief_rate": 0.16
+        },
+        {
+          "mean_score": 0.11,
+          "relief_rate": 0.202
+        },
+        {
+          "mean_score": 0.118,
+          "relief_rate": 0.15
+        },
+        {
+          "mean_score": 0.149,
+          "relief_rate": 0.059
+        },
+        {
+          "mean_score": 0.16,
+          "relief_rate": 0.221
+        },
+        {
+          "mean_score": 0.16,
+          "relief_rate": 0.231
+        },
+        {
+          "mean_score": 0.175,
+          "relief_rate": 0.175
+        },
+        {
+          "mean_score": 0.212,
+          "relief_rate": 0.186
+        },
+        {
+          "mean_score": 0.336,
+          "relief_rate": 0.255
+        }
+      ]
+    },
+    "logistic_regression_fields": {
+      "rows": 761880,
+      "base_rate": 0.17544232687562344,
+      "roc_auc": 0.7685505868545849,
+      "pr_auc": 0.4265658776034235,
+      "brier": 0.12387542739850545,
+      "precision_top10": 0.4552029190948706,
+      "lift_top10": 2.594601469334012,
+      "calibration_deciles": [
+        {
+          "mean_score": 0.001,
+          "relief_rate": 0.025
+        },
+        {
+          "mean_score": 0.003,
+          "relief_rate": 0.037
+        },
+        {
+          "mean_score": 0.009,
+          "relief_rate": 0.055
+        },
+        {
+          "mean_score": 0.043,
+          "relief_rate": 0.064
+        },
+        {
+          "mean_score": 0.071,
+          "relief_rate": 0.144
+        },
+        {
+          "mean_score": 0.121,
+          "relief_rate": 0.133
+        },
+        {
+          "mean_score": 0.184,
+          "relief_rate": 0.214
+        },
+        {
+          "mean_score": 0.247,
+          "relief_rate": 0.244
+        },
+        {
+          "mean_score": 0.328,
+          "relief_rate": 0.384
+        },
+        {
+          "mean_score": 0.486,
+          "relief_rate": 0.455
+        }
+      ]
+    },
+    "lightgbm_fields_calibrated": {
+      "rows": 761880,
+      "base_rate": 0.17544232687562344,
+      "roc_auc": 0.7823827496418809,
+      "pr_auc": 0.46084312158430374,
+      "brier": 0.11894329928549303,
+      "precision_top10": 0.5312910169580511,
+      "lift_top10": 3.028294405458382,
+      "calibration_deciles": [
+        {
+          "mean_score": 0.051,
+          "relief_rate": 0.05
+        },
+        {
+          "mean_score": 0.052,
+          "relief_rate": 0.049
+        },
+        {
+          "mean_score": 0.052,
+          "relief_rate": 0.032
+        },
+        {
+          "mean_score": 0.054,
+          "relief_rate": 0.036
+        },
+        {
+          "mean_score": 0.094,
+          "relief_rate": 0.121
+        },
+        {
+          "mean_score": 0.127,
+          "relief_rate": 0.141
+        },
+        {
+          "mean_score": 0.186,
+          "relief_rate": 0.184
+        },
+        {
+          "mean_score": 0.303,
+          "relief_rate": 0.293
+        },
+        {
+          "mean_score": 0.365,
+          "relief_rate": 0.319
+        },
+        {
+          "mean_score": 0.57,
+          "relief_rate": 0.529
+        }
+      ]
+    }
+  },
+  "test_rows_with_narrative": {
+    "baseline_product_issue_rate": {
+      "rows": 339854,
+      "base_rate": 0.14560958529250795,
+      "roc_auc": 0.5850213064378847,
+      "pr_auc": 0.20912511991267338,
+      "brier": 0.12424277248045408,
+      "precision_top10": 0.27197292923348537,
+      "lift_top10": 1.8678229780486792,
+      "calibration_deciles": [
+        {
+          "mean_score": 0.068,
+          "relief_rate": 0.09
+        },
+        {
+          "mean_score": 0.094,
+          "relief_rate": 0.145
+        },
+        {
+          "mean_score": 0.114,
+          "relief_rate": 0.183
+        },
+        {
+          "mean_score": 0.128,
+          "relief_rate": 0.118
+        },
+        {
+          "mean_score": 0.158,
+          "relief_rate": 0.009
+        },
+        {
+          "mean_score": 0.159,
+          "relief_rate": 0.128
+        },
+        {
+          "mean_score": 0.165,
+          "relief_rate": 0.166
+        },
+        {
+          "mean_score": 0.201,
+          "relief_rate": 0.172
+        },
+        {
+          "mean_score": 0.231,
+          "relief_rate": 0.181
+        },
+        {
+          "mean_score": 0.358,
+          "relief_rate": 0.263
+        }
+      ]
+    },
+    "logistic_regression_fields": {
+      "rows": 339854,
+      "base_rate": 0.14560958529250795,
+      "roc_auc": 0.7818515290737381,
+      "pr_auc": 0.4035942314149741,
+      "brier": 0.10645865419396469,
+      "precision_top10": 0.4400176548477269,
+      "lift_top10": 3.0219003368754676,
+      "calibration_deciles": [
+        {
+          "mean_score": 0.001,
+          "relief_rate": 0.013
+        },
+        {
+          "mean_score": 0.003,
+          "relief_rate": 0.03
+        },
+        {
+          "mean_score": 0.006,
+          "relief_rate": 0.022
+        },
+        {
+          "mean_score": 0.027,
+          "relief_rate": 0.059
+        },
+        {
+          "mean_score": 0.059,
+          "relief_rate": 0.112
+        },
+        {
+          "mean_score": 0.1,
+          "relief_rate": 0.117
+        },
+        {
+          "mean_score": 0.166,
+          "relief_rate": 0.164
+        },
+        {
+          "mean_score": 0.231,
+          "relief_rate": 0.196
+        },
+        {
+          "mean_score": 0.308,
+          "relief_rate": 0.303
+        },
+        {
+          "mean_score": 0.49,
+          "relief_rate": 0.44
+        }
+      ]
+    },
+    "lightgbm_fields_calibrated": {
+      "rows": 339854,
+      "base_rate": 0.14560958529250795,
+      "roc_auc": 0.7882431127150765,
+      "pr_auc": 0.4216642560107585,
+      "brier": 0.10421028031257269,
+      "precision_top10": 0.44328380167721054,
+      "lift_top10": 3.044331187309678,
+      "calibration_deciles": [
+        {
+          "mean_score": 0.051,
+          "relief_rate": 0.044
+        },
+        {
+          "mean_score": 0.052,
+          "relief_rate": 0.042
+        },
+        {
+          "mean_score": 0.052,
+          "relief_rate": 0.018
+        },
+        {
+          "mean_score": 0.052,
+          "relief_rate": 0.015
+        },
+        {
+          "mean_score": 0.08,
+          "relief_rate": 0.085
+        },
+        {
+          "mean_score": 0.115,
+          "relief_rate": 0.12
+        },
+        {
+          "mean_score": 0.165,
+          "relief_rate": 0.151
+        },
+        {
+          "mean_score": 0.269,
+          "relief_rate": 0.242
+        },
+        {
+          "mean_score": 0.353,
+          "relief_rate": 0.298
+        },
+        {
+          "mean_score": 0.515,
+          "relief_rate": 0.439
+        }
+      ]
+    },
+    "text_plus_fields_logistic": {
+      "rows": 339854,
+      "base_rate": 0.14560958529250795,
+      "roc_auc": 0.7863879877127726,
+      "pr_auc": 0.4198084397549772,
+      "brier": 0.10620270103012247,
+      "precision_top10": 0.4599676327791673,
+      "lift_top10": 3.1589103962844267,
+      "calibration_deciles": [
+        {
+          "mean_score": 0.001,
+          "relief_rate": 0.022
+        },
+        {
+          "mean_score": 0.002,
+          "relief_rate": 0.015
+        },
+        {
+          "mean_score": 0.005,
+          "relief_rate": 0.031
+        },
+        {
+          "mean_score": 0.02,
+          "relief_rate": 0.058
+        },
+        {
+          "mean_score": 0.045,
+          "relief_rate": 0.093
+        },
+        {
+          "mean_score": 0.079,
+          "relief_rate": 0.134
+        },
+        {
+          "mean_score": 0.129,
+          "relief_rate": 0.161
+        },
+        {
+          "mean_score": 0.19,
+          "relief_rate": 0.202
+        },
+        {
+          "mean_score": 0.294,
+          "relief_rate": 0.28
+        },
+        {
+          "mean_score": 0.538,
+          "relief_rate": 0.46
+        }
+      ]
+    }
+  }
+}
