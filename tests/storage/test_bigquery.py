@@ -42,7 +42,14 @@ def test_ensure_schema_creates_partitioned_tables():
     BigQueryWarehouse(client, "proj").ensure_schema()
     assert client.datasets[0][0].dataset_id == "complaint_radar" and client.datasets[0][1]
     tables = {t.table_id: t for t, _ in client.tables}
-    assert set(tables) == {"raw_complaint_versions", "pipeline_runs", "alerts", "snapshot_vintages"}
+    assert set(tables) == {
+        "raw_complaint_versions",
+        "pipeline_runs",
+        "alerts",
+        "snapshot_vintages",
+        "triage_scores",
+        "drift_metrics",
+    }
     assert tables["alerts"].time_partitioning.field == "week_start"
     raw = tables["raw_complaint_versions"]
     assert raw.time_partitioning.field == "loaded_date"
@@ -125,7 +132,14 @@ def test_ensure_schema_refreshes_table_expiry():
     client = QueryClient()
     BigQueryWarehouse(client, "proj").ensure_schema()
     expiry = [(t, e) for t, f, e in client.updated if f == ["expires"]]
-    assert {t for t, _ in expiry} == {"raw_complaint_versions", "pipeline_runs", "alerts", "snapshot_vintages"}
+    assert {t for t, _ in expiry} == {
+        "raw_complaint_versions",
+        "pipeline_runs",
+        "alerts",
+        "snapshot_vintages",
+        "triage_scores",
+        "drift_metrics",
+    }
     assert all(e is not None for _, e in expiry)
 
 

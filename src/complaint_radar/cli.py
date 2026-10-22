@@ -202,3 +202,24 @@ def embed_sample_cmd(n: int = typer.Option(40_000, help="Sample size (stratified
     sample.to_parquet(out / "sample.parquet")
     emb = embed(sample["text"].tolist(), cache=out / "sample_embeddings.npy")
     typer.echo(f"corpus {len(corpus):,} unique narratives, sample {len(sample):,}, embeddings {emb.shape}")
+
+
+@app.command("train-triage")
+def train_triage_cmd() -> None:
+    """Train and evaluate the escalation-triage models (2019-2023 train, 2024 calibrate, 2025 test)."""
+    import duckdb
+
+    from complaint_radar.triage.train import load_training_frame, train_and_evaluate
+
+    con = duckdb.connect(str(config.duckdb_path()), read_only=True)
+    df = load_training_frame(con)
+    res = train_and_evaluate(
+        df,
+        Path(__file__).resolve().parent / "data" / "triage_model.joblib",
+        Path("docs/results/triage.json"),
+    )
+    for name, m in res["test_all_rows"].items():
+        typer.echo(
+            f"{name:30} ROC-AUC {m['roc_auc']:.3f}  PR-AUC {m['pr_auc']:.3f}  "
+            f"lift@10% {m['lift_top10']:.2f}  Brier {m['brier']:.4f}"
+        )

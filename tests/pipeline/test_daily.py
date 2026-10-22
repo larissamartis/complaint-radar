@@ -19,6 +19,7 @@ class FakeWarehouse:
         self.schema_calls = 0
         self.alerts: list[dict] = []
         self.vintages: list[dict] = []
+        self.frames: dict[str, list[dict]] = {}
 
     def ensure_schema(self):
         self.schema_calls += 1
@@ -51,6 +52,10 @@ class FakeWarehouse:
 
     def load_vintage(self, df):
         self.vintages.extend(df.to_dict("records"))
+        return len(df)
+
+    def load_frame(self, df, table, arrow):
+        self.frames.setdefault(table, []).extend(df.to_dict("records"))
         return len(df)
 
     def existing_alert_ids(self, week):

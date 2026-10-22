@@ -32,3 +32,23 @@ jobs:
           CR_LAKE_DIR: ${{ github.workspace }}/tests/fixtures/lake
           CR_DUCKDB_PATH: ${{ runner.temp }}/ci.duckdb
         run: uv run dbt build --project-dir dbt --profiles-dir dbt
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build API image
+        run: docker build -t complaint-radar-api .
+
+      - name: Smoke-test the running container
+        run: |
+          docker run -d --name api -p 8000:8000 complaint-radar-api
+          for i in $(seq 1 30); do
+            if curl -fs http://127.0.0.1:8000/health; then echo; break; fi
+            sleep 2
+          done
+          curl -fs http://127.0.0.1:8000/health | grep '"status":"ok"'
+          curl -fs "http://127.0.0.1:8000/alerts" | grep '\[\]'
+          docker logs api | tail -20

@@ -18,6 +18,7 @@ from complaint_radar.detect.patterns import flag_cross_company_waves
 from complaint_radar.ingest.snapshot import snapshot_to_parquet
 from complaint_radar.pipeline.change_capture import select_changes
 from complaint_radar.summarize.enrich import enrich_alerts
+from complaint_radar.triage.scoring import score_new_complaints
 
 log = logging.getLogger(__name__)
 
@@ -103,6 +104,11 @@ def run_daily(deps: Deps, as_of: date | None = None, window_days: int = HOT_WIND
 
         run["step"] = "dbt"
         deps.run_dbt()
+
+        run["step"] = "score"
+        scored = score_new_complaints(changes, keys, as_of, wh)
+        if scored is not None:
+            log.info("triage: scored %d new complaints; drift %s", scored["scored"], scored["drift"])
 
         run["step"] = "vintage"
         if not wh.has_vintage(as_of):

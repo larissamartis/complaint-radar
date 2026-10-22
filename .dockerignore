@@ -1,0 +1,10 @@
+.git
+.github
+.plans
+dbt/target
+dbt/logs
+tests
+docs
+**/__pycache__
+*.duckdb
+*.parquet

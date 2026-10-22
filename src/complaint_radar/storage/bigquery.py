@@ -18,7 +18,7 @@ LOCATION = "US"
 # Sandbox tables expire 60 days after creation. Pushing expiry forward on every run keeps the tables alive;
 # old *partitions* still expire after 60 days, which is exactly the rolling hot window we want.
 TABLE_KEEPALIVE_DAYS = 59
-TABLES = ("raw_complaint_versions", "pipeline_runs", "alerts", "snapshot_vintages")
+TABLES = ("raw_complaint_versions", "pipeline_runs", "alerts", "snapshot_vintages", "triage_scores", "drift_metrics")
 
 _STRING_COLUMNS = (
     "product",
@@ -117,6 +117,33 @@ ALERTS_SCHEMA = [bigquery.SchemaField(f.name, _BQ_TYPES.get(f.type, "TIMESTAMP")
 
 VINTAGES_SCHEMA = [bigquery.SchemaField(f.name, _BQ_TYPES[f.type]) for f in VINTAGES_ARROW]
 
+TRIAGE_SCORES_ARROW = pa.schema(
+    [
+        ("as_of", pa.date32()),
+        ("complaint_id", pa.int64()),
+        ("date_received", pa.date32()),
+        ("company", pa.string()),
+        ("product", pa.string()),
+        ("issue", pa.string()),
+        ("relief_probability", pa.float64()),
+        ("priority", pa.string()),
+        ("model_version", pa.string()),
+    ]
+)
+DRIFT_ARROW = pa.schema(
+    [
+        ("as_of", pa.date32()),
+        ("metric", pa.string()),
+        ("value", pa.float64()),
+        ("status", pa.string()),
+        ("rows", pa.int64()),
+    ]
+)
+
+
+def _bq_schema(arrow: pa.Schema) -> list:
+    return [bigquery.SchemaField(f.name, _BQ_TYPES.get(f.type, "TIMESTAMP")) for f in arrow]
+
 
 class BigQueryWarehouse:
     def __init__(self, client, project: str, dataset: str = DATASET):
@@ -147,6 +174,11 @@ class BigQueryWarehouse:
         vintages = bigquery.Table(self._table("snapshot_vintages"), schema=VINTAGES_SCHEMA)
         vintages.time_partitioning = bigquery.TimePartitioning(field="as_of")
         self.client.create_table(vintages, exists_ok=True)
+
+        for name, arrow in (("triage_scores", TRIAGE_SCORES_ARROW), ("drift_metrics", DRIFT_ARROW)):
+            table = bigquery.Table(self._table(name), schema=_bq_schema(arrow))
+            table.time_partitioning = bigquery.TimePartitioning(field="as_of")
+            self.client.create_table(table, exists_ok=True)
         self.refresh_expiry()
 
     def _add_missing_fields(self, name: str, schema: list) -> None:
@@ -224,3 +256,13 @@ class BigQueryWarehouse:
             path = Path(tmp) / "vintage.parquet"
             pq.write_table(table, path)
             return self.load_parquet(path, "snapshot_vintages")
+
+    def load_frame(self, df, table: str, arrow: pa.Schema) -> int:
+        """Append a DataFrame to `table` with an explicit Arrow schema (load job; no streaming in the sandbox)."""
+        cols = [f.name for f in arrow]
+        rows = df.reindex(columns=cols)
+        rows = rows.astype(object).where(rows.notna(), None).to_dict("records")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / f"{table}.parquet"
+            pq.write_table(pa.Table.from_pylist(rows, schema=arrow), path)
+            return self.load_parquet(path, table)
