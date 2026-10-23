@@ -266,7 +266,7 @@ def _style(chart: alt.Chart, height: int) -> alt.Chart:
             labelFontSize=11, titleFontSize=11, titleFontWeight="normal", labelPadding=6,
         )
         .configure_axisX(grid=False)
-        .configure_legend(labelColor=INK_2, titleColor=INK_2, orient="bottom", columns=3, labelLimit=240,
+        .configure_legend(labelColor=INK_2, titleColor=INK_2, orient="bottom", columns=2, labelLimit=240,
                           symbolType="circle", symbolSize=80, labelFontSize=11)
     )  # fmt: skip
 
