@@ -62,3 +62,12 @@ def test_dashboard_renders_with_no_live_data(monkeypatch, tmp_path):
     for section in ["Early-warning backtest", "Campaigns", "Topics", "Enforcement study"]:
         at.radio(key="research_section").set_value(section).run()
         assert not at.exception, (section, at.exception)
+
+
+def test_text_is_escaped_before_rendering_as_html():
+    import sys
+
+    sys.path.insert(0, str(ROOT / "dashboard"))
+    import ui
+
+    assert ui.safe("<img src=x onerror=alert(1)> costs $5") == "&lt;img src=x onerror=alert(1)&gt; costs \$5"

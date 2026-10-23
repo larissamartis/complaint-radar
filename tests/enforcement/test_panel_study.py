@@ -106,3 +106,15 @@ def test_bootstrap_interval_spans_zero_when_models_are_equal():
     p = rng.random(1000)
     ci = cluster_bootstrap(test, p, p + rng.normal(0, 1e-9, 1000), n=200)["ci95"]
     assert ci[0] <= 0 <= ci[1]
+
+
+def test_training_labels_never_reach_into_the_test_period():
+    from complaint_radar.enforcement.study import TEST, TRAIN
+
+    last_train_month = pd.Timestamp(TRAIN[1])
+    assert last_train_month + pd.DateOffset(months=11) < pd.Timestamp(TEST[0])
+
+
+def test_results_report_base_rate_by_year(tmp_path):
+    res = run_study(synthetic_panel(), actions_used=50, out_path=tmp_path / "enf.json")
+    assert set(res["data"]["test_base_rate_by_year"]) == {"2020", "2021", "2022", "2023", "2024"}

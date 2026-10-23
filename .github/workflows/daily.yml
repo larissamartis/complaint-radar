@@ -84,10 +84,14 @@ jobs:
 
       # The dashboard reads small JSON files from the `serving-data` branch, so it needs no cloud credentials.
       # The branch is replaced by a single fresh commit each day, which keeps it small.
+      # If any export query fails, nothing is published, so yesterday's dashboard data stays in place.
       - name: Export serving data
+        id: export
+        continue-on-error: true
         run: uv run complaint-radar export-serving --out "$RUNNER_TEMP/serving"
 
       - name: Publish serving data
+        if: steps.export.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -97,7 +101,13 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -q -m "Serving data $(date -u +%Y-%m-%d)"
-          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" serving-data
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          git -c http.extraheader="AUTHORIZATION: basic ${auth}" push -q -f \
+            "https://github.com/${GITHUB_REPOSITORY}.git" serving-data
+
+      - name: Warn when serving data was not refreshed
+        if: steps.export.outcome == 'failure'
+        run: echo "::warning title=serving export::Dashboard data was not refreshed today (export failed); see the export step log."
 
       - name: Remove key
         if: always()

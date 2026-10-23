@@ -98,7 +98,11 @@ def test_brand_prefix_rules_match_banks_to_parent_names():
     assert match_one("American Express Centurion Bank")["matched_company"] == "AMERICAN EXPRESS COMPANY"
     assert match_one("Regions Bank")["matched_company"] == "REGIONS FINANCIAL CORPORATION"
     assert match_one("Synchrony Bank, f/k/a GE Capital Retail Bank")["matched_company"] == "SYNCHRONY FINANCIAL"
-    assert match_one("Citizens Bank, N.A.")["matched_company"] == "CITIZENS FINANCIAL GROUP, INC."  # largest wins
+    # "Citizens" is a generic word shared by unrelated banks, so it is never auto-matched: it needs a reviewed override.
+    assert match_one("Citizens Bank, N.A.")["match_method"] in ("review", "none")
+    action = pd.DataFrame({"company": ["Citizens Bank, N.A."], "url": ["c"], "date_filed": ["2020-01-30"]})
+    over = match_companies(action, [c for c, _ in COMPANIES], overrides={"c": "CITIZENS FINANCIAL GROUP, INC."})
+    assert over.loc[0, "matched_company"] == "CITIZENS FINANCIAL GROUP, INC."
 
 
 def test_multi_party_names_are_split():
@@ -118,3 +122,31 @@ def test_distinctive_first_word_and_alias():
 def test_people_named_in_actions_are_not_matched_to_companies():
     m = match_one("Castle & Cooke Mortgage, LLC; Matthew A. Pineda, individually; and Buck L. Hawkins")
     assert m["matched_company"] != "Matthew Mortgage LLC"
+
+
+def test_first_word_rule_needs_a_dominant_brand():
+    companies = {"FREEDOM MORTGAGE CORPORATION": 30000, "Freedom Financial Network": 25000,
+                 "TRANSUNION INTERMEDIATE HOLDINGS, INC.": 4_500_000, "TransUnion Rental Screening": 900}  # fmt: skip
+    actions = pd.DataFrame({"company": ["Freedom Debt Relief, LLC", "TransUnion Interactive, Inc."],
+                            "url": ["f", "t"], "date_filed": ["2017-11-08"] * 2})  # fmt: skip
+    m = match_companies(actions, list(companies), volumes=companies).set_index("url")
+    assert m.loc["f", "match_method"] == "review"  # two big "Freedom" brands: not safe to pick one
+    assert m.loc["t", "matched_company"] == "TRANSUNION INTERMEDIATE HOLDINGS, INC."
+
+
+def test_generic_single_word_never_drives_a_prefix_match():
+    companies = {"AMERICAN EXPRESS COMPANY": 50000}
+    actions = pd.DataFrame(
+        {"company": ["American Financial Services, Inc."], "url": ["a"], "date_filed": ["2015-01-01"]}
+    )
+    m = match_companies(actions, list(companies), volumes=companies)
+    assert m.loc[0, "matched_company"] is None or m.loc[0, "match_method"] in ("review", "none")
+
+
+def test_every_matched_party_is_labelled():
+    companies = {"Navient Solutions, LLC.": 40000, "Pioneer Credit Recovery, Inc.": 3000}
+    name = "Navient Corporation, Navient Solutions, Inc. and Pioneer Credit Recovery, Inc."
+    actions = pd.DataFrame({"company": [name],
+                            "url": ["n"], "date_filed": ["2017-01-18"]})  # fmt: skip
+    used = accepted(match_companies(actions, list(companies), volumes=companies))
+    assert sorted(used["matched_company"]) == ["Navient Solutions, LLC.", "Pioneer Credit Recovery, Inc."]

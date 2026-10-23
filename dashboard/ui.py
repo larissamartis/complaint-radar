@@ -43,6 +43,14 @@ CSS = f"""
 """
 
 
+def safe(text) -> str:
+    """Escape text for st.markdown(unsafe_allow_html=True): no HTML from data (company names, LLM summaries),
+    and '$' escaped so Streamlit does not render it as a maths formula."""
+    return html.escape("" if text is None or (isinstance(text, float) and text != text) else str(text)).replace(
+        "$", "\\$"
+    )
+
+
 def inject_css() -> None:
     st.markdown(CSS, unsafe_allow_html=True)
 

@@ -9,7 +9,8 @@ rules from strictest to loosest:
   exact        identical after normalisation (lowercase, punctuation and legal suffixes removed)
   alias        a short documented list of known name differences (e.g. "U.S. Bank" -> "U.S. Bancorp")
   prefix       one name is a word-prefix of the other (same brand); only for parties that look like companies
-  first_token  a distinctive first word shared by both (e.g. "USAA"); only for company-like parties
+  first_token  a distinctive first word shared by both (e.g. "USAA"), only when one company holds >= 90% of
+               that brand's complaints (otherwise "review"); only for company-like parties
   fuzzy        close spelling within the same first word (similarity >= 0.90); 0.80-0.90 is flagged "review"
 
 When a rule finds several companies, the one with the most complaints wins. People named in actions do not look
@@ -22,6 +23,7 @@ from difflib import SequenceMatcher
 import pandas as pd
 
 ACCEPT, REVIEW = 0.90, 0.80
+DOMINANT_SHARE = 0.90  # share of the brand's complaint volume the largest company must hold for a first-word match
 ACCEPTED_METHODS = ("override", "exact", "alias", "prefix", "first_token", "fuzzy")
 _RANK = {m: i for i, m in enumerate(["exact", "alias", "prefix", "first_token", "fuzzy", "review", "none"])}
 
@@ -82,6 +84,12 @@ def _is_word_prefix(short: str, long: str) -> bool:
     return long == short or long.startswith(short + " ")
 
 
+def _brand_like(norm: str) -> bool:
+    """Two or more words, or one distinctive word of 5+ letters (not "american", "first", ...)."""
+    words = norm.split()
+    return len(words) >= 2 or (len(norm) >= 5 and norm not in _GENERIC_FIRST)
+
+
 class _Index:
     def __init__(self, companies: list[str], volumes: dict[str, float]):
         self.by_norm: dict[str, str] = {}
@@ -105,13 +113,19 @@ class _Index:
         if company_like:
             cands = [
                 c for c in self.by_first.get(first, [])
-                if (_is_word_prefix(c, n) or _is_word_prefix(n, c))
-                and (len(c.split()) >= 2 or len(c) >= 5) and (len(n.split()) >= 2 or len(n) >= 5)
+                if (_is_word_prefix(c, n) or _is_word_prefix(n, c)) and _brand_like(c) and _brand_like(n)
             ]  # fmt: skip
             if cands:
                 return self.biggest(cands), 0.95, "prefix"
-            if len(first) >= 4 and first not in _GENERIC_FIRST and self.by_first.get(first):
-                return self.biggest(self.by_first[first]), 0.9, "first_token"
+            same_first = self.by_first.get(first, [])
+            if len(first) >= 4 and first not in _GENERIC_FIRST and same_first:
+                top = self.biggest(same_first)
+                total = sum(self.volume.get(c, 0) for c in same_first)
+                # Only accept when one company clearly owns the brand ("TransUnion"); with several sizeable
+                # companies sharing the word ("Freedom Mortgage" vs "Freedom Financial") send it to review.
+                if total == 0 or self.volume.get(top, 0) >= DOMINANT_SHARE * total:
+                    return top, 0.9, "first_token"
+                return top, 0.85, "review"
         best, score = None, 0.0
         for cand in self.by_first.get(first, []):
             s = SequenceMatcher(None, n, cand).ratio()
@@ -130,27 +144,31 @@ def match_companies(
     overrides: dict[str, str] | None = None,
     volumes: dict[str, float] | None = None,
 ) -> pd.DataFrame:
-    """Add matched_company, matched_party, match_score and match_method to each action."""
+    """Add the best match (matched_company, matched_party, match_score, match_method) and every accepted
+    company named in the action (matched_companies, "|"-separated): one action can sanction several firms."""
     overrides = overrides or {}
     index = _Index(companies, volumes or {})
     out = []
     for row in actions.itertuples():
         if row.url in overrides:
-            out.append((overrides[row.url] or None, None, 1.0, "override"))
+            target = overrides[row.url] or None
+            out.append((target.split("|")[0] if target else None, None, 1.0, "override", target))
             continue
         results = [(*index.match(n, like), n) for n, like in parties(row.company)]
         if not results:
-            out.append((None, None, 0.0, "none"))
+            out.append((None, None, 0.0, "none", None))
             continue
         norm, score, method, party = min(results, key=lambda r: (_RANK[r[2]], -index.volume.get(r[0] or "", 0)))
-        out.append((index.by_norm.get(norm) if norm else None, party, score, method))
+        all_ok = sorted({index.by_norm[r[0]] for r in results if r[0] and r[2] in ACCEPTED_METHODS})
+        out.append((index.by_norm.get(norm) if norm else None, party, score, method, "|".join(all_ok) or None))
     result = actions.copy()
-    cols = ["matched_company", "matched_party", "match_score", "match_method"]
+    cols = ["matched_company", "matched_party", "match_score", "match_method", "matched_companies"]
     result[cols] = pd.DataFrame(out, index=actions.index, columns=cols)
     return result
 
 
 def accepted(matches: pd.DataFrame) -> pd.DataFrame:
-    """Actions usable in the study: every accepted method with a target company ('review' and 'none' are not)."""
-    ok = matches["match_method"].isin(ACCEPTED_METHODS) & matches["matched_company"].notna()
-    return matches[ok]
+    """One row per (action, sanctioned company) with an accepted match; 'review' and 'none' are left out."""
+    ok = matches[matches["match_method"].isin(ACCEPTED_METHODS) & matches["matched_companies"].notna()].copy()
+    ok["matched_company"] = ok["matched_companies"].str.split("|")
+    return ok.explode("matched_company").drop_duplicates(["url", "matched_company"]).reset_index(drop=True)

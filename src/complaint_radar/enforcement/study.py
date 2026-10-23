@@ -1,6 +1,7 @@
 """Do complaint patterns warn of CFPB enforcement actions in advance? A strictly time-split test.
 
-train: company-months 2015-01 .. 2019-12 | test: 2020-01 .. 2024-08 (the last month whose 12-month target window
+train: company-months 2015-01 .. 2019-01 (labels end Dec 2019)
+test: 2020-01 .. 2024-08 (the last month whose 12-month target window
 ends before the action list stops, Aug 2025). Compared on the same test rows:
   baseline   logistic regression on complaint volume only (big companies get more actions)
   logistic   logistic regression on all complaint-pattern features (standardised)
@@ -25,7 +26,8 @@ from complaint_radar.enforcement.panel import FEATURES
 
 log = logging.getLogger(__name__)
 
-TRAIN = ("2015-01-01", "2019-12-01")
+# Training rows end in Jan 2019 so their 12-month label window (to Dec 2019) never reaches into the test period.
+TRAIN = ("2015-01-01", "2019-01-01")
 TEST = ("2020-01-01", "2024-08-01")
 LGBM_PARAMS = {
     "objective": "binary",
@@ -107,6 +109,9 @@ def run_study(panel: pd.DataFrame, actions_used: int, out_path: Path) -> dict:
             "test_positive_rows": int(y_te.sum()),
             "test_positive_companies": int(test.loc[test["target"] == 1, "company"].nunique()),
             "test_base_rate": float(y_te.mean()),
+            "test_base_rate_by_year": {
+                str(y): float(g.mean()) for y, g in test.groupby(pd.to_datetime(test["month"]).dt.year)["target"]
+            },
         },
         "test": {name: _metrics(y_te, p) for name, p in preds.items()},
         "best_pattern_model": best,

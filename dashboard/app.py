@@ -43,12 +43,15 @@ if not alerts.empty:
     alerts.loc[missing, "pattern"] = (waves[missing] >= 5).map({True: "cross_company_wave", False: "single_company"})
 
 
-def complete_weeks(df: pd.DataFrame) -> pd.DataFrame:
-    """Drop the first and current week: they are only partly inside the 60-day window and would dip to zero."""
-    if df.empty:
+def complete_weeks(df: pd.DataFrame, all_weeks: pd.Series) -> pd.DataFrame:
+    """Drop the window's first and current week: they are only partly inside the 60-day window and would dip.
+
+    The weeks come from the whole dataset, not the filtered series, so a quiet series keeps its complete weeks.
+    """
+    weeks = sorted(all_weeks.dropna().unique())
+    if df.empty or len(weeks) <= 2:
         return df
-    weeks = sorted(df["week_start"].unique())
-    return df[df["week_start"].isin(weeks[1:-1])] if len(weeks) > 2 else df
+    return df[(df["week_start"] > weeks[0]) & (df["week_start"] < weeks[-1])]
 
 
 # ---------------------------------------------------------------- header
@@ -109,8 +112,8 @@ with tabs[0]:
                f"{waves} in a cross-company wave", "notifications_active", ui.SERIES[1]),
         ui.kpi("High-priority complaints", ui.fmt_int(high), f"of {ui.fmt_int(scored)} scored in the last run",
                "priority_high", ui.SERIES[6]),
-        ui.kpi("Last pipeline run", last_run["status"].replace("_", " ").capitalize() if last_run is not None else "—",
-               f"{last_run['as_of']:%d %b %Y}" if last_run is not None else "no runs recorded", "sync", ui.SERIES[2]),
+        ui.kpi("Last pipeline run", str(last_run["status"] or "—").replace("_", " ").capitalize() if last_run is not None else "—",
+               f"{last_run['as_of']:%d %b %Y}" if last_run is not None and pd.notna(last_run['as_of']) else "no runs recorded", "sync", ui.SERIES[2]),
     ])  # fmt: skip
     st.write("")
     left, right = st.columns([3, 2], gap="large")
@@ -125,20 +128,20 @@ with tabs[0]:
         for _, a in week_alerts.sort_values("score", ascending=False).head(5).iterrows():
             with st.container(border=True):
                 st.markdown(
-                    f"**{a['company']}** · {a['issue']}<br><span class='cr-muted'>{ui.short_product(a['product'])}</span><br>"
+                    f"**{ui.safe(a['company'])}** · {ui.safe(a['issue'])}<br><span class='cr-muted'>{ui.safe(ui.short_product(a['product']))}</span><br>"
                     f"{ui.mapped_badge(a.get('pattern'), ui.PATTERN_BADGE)} "
                     f"{ui.badge(f'{a["score"]:.1f}× usual', 'warning', 'trending_up')} "
-                    f"{ui.badge(f'{int(a["n"])} complaints', 'neutral')}",
+                    f"{ui.badge(f'{ui.fmt_int(a["n"])} complaints', 'neutral')}",
                     unsafe_allow_html=True,
                 )
                 if isinstance(a.get("summary"), str):
-                    st.markdown(f"<div class='cr-summary'>{a['summary']}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div class='cr-summary'>{ui.safe(a['summary'])}</div>", unsafe_allow_html=True)
     with right:
         ui.panel_head("Weekly complaints by product (non-bureau)", "stacked_line_chart")
         if weekly.empty:
             st.info("Weekly volume appears after the first pipeline run.")
         else:
-            other = complete_weeks(weekly[weekly["segment"] == "other"])
+            other = complete_weeks(weekly[weekly["segment"] == "other"], weekly["week_start"])
             other = other.assign(product=other["product"].map(ui.short_product))
             top = other.groupby("product")["complaints"].sum().nlargest(4).index.tolist()
             other = other.assign(product=other["product"].where(other["product"].isin(top), "Other products"))
@@ -205,7 +208,7 @@ with tabs[1]:
             st.markdown(
                 f"{ui.mapped_badge(a.get('pattern'), ui.PATTERN_BADGE)} "
                 f"{ui.badge(f'{a["score"]:.1f}× usual', 'warning', 'trending_up')} "
-                f"{ui.badge(f'week {int(a["week_age"])} ago · {a["completeness"]:.0%} published', 'neutral', 'schedule')}",
+                f"{ui.badge(f'week {ui.fmt_int(a["week_age"])} ago · {(a["completeness"] if pd.notna(a["completeness"]) else 1):.0%} published', 'neutral', 'schedule')}",
                 unsafe_allow_html=True,
             )
             if isinstance(a.get("summary"), str):
@@ -214,7 +217,7 @@ with tabs[1]:
                     if a.get("summary_method") == "llm"
                     else "template"
                 )
-                st.markdown(f"<div class='cr-summary'>{a['summary']}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='cr-summary'>{ui.safe(a['summary'])}</div>", unsafe_allow_html=True)
                 st.caption(f"Summary: {method}.")
             topics = json.loads(a["typical_topics"]) if isinstance(a.get("typical_topics"), str) else []
             if topics:
@@ -222,7 +225,7 @@ with tabs[1]:
                     "**What customers usually describe for this product and issue** (from archived complaints):"
                 )
                 for t in topics:
-                    st.markdown(f"- {t['label']} — {t['share']:.0%} of archived complaints")
+                    st.markdown(f"- {ui.safe(t['label'])} — {t['share']:.0%} of archived complaints")
 
 # ---------------------------------------------------------------- trends
 with tabs[2]:
@@ -235,7 +238,11 @@ with tabs[2]:
         company = c1.selectbox("Company", sorted(series["company"].unique()), key="trend_company")
         sub = series[series["company"] == company]
         issue = c2.selectbox("Issue", sorted(sub["issue"].unique()), key="trend_issue")
-        plot = complete_weeks(sub[sub["issue"] == issue]).groupby("week_start", as_index=False)["complaints"].sum()
+        plot = (
+            complete_weeks(sub[sub["issue"] == issue], series["week_start"])
+            .groupby("week_start", as_index=False)["complaints"]
+            .sum()
+        )
         st.altair_chart(
             ui.line_chart(plot, "week_start", "complaints", None, ["week_start:T", ui.tip("complaints")],
                           y_title="Complaints per week"),
