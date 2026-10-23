@@ -1,0 +1,5 @@
+[{"week_start":"2026-09-21","segment":"other","product":"Debt collection","complaints":4500,"relief":200,"in_progress":10},
+ {"week_start":"2026-09-28","segment":"other","product":"Debt collection","complaints":4600,"relief":210,"in_progress":20},
+ {"week_start":"2026-09-21","segment":"other","product":"Credit card","complaints":1900,"relief":300,"in_progress":5},
+ {"week_start":"2026-09-28","segment":"other","product":"Credit card","complaints":1800,"relief":310,"in_progress":9},
+ {"week_start":"2026-09-28","segment":"bureau","product":"Credit reporting or other personal consumer reports","complaints":145000,"relief":1000,"in_progress":90000}]
