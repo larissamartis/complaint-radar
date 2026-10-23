@@ -25,7 +25,15 @@ jobs:
           uv run ruff format --check .
 
       - name: Unit tests
-        run: uv run pytest -q
+        run: uv run pytest -q -rf --tb=line 2>&1 | tee "$RUNNER_TEMP/pytest.txt"; exit "${PIPESTATUS[0]}"
+
+      # Surface each failing test as an annotation, so failures are readable from the run summary.
+      - name: Report failing tests
+        if: failure()
+        run: |
+          grep -E "^(FAILED|ERROR) |^E  |Error:" "$RUNNER_TEMP/pytest.txt" | head -20 | while IFS= read -r line; do
+            echo "::error title=pytest::${line//$'\n'/ }"
+          done
 
       - name: dbt build on fixture lake
         env:
