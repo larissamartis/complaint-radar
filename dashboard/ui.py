@@ -110,7 +110,7 @@ def _style(chart: alt.Chart, height: int) -> alt.Chart:
             gridColor=GRID, domainColor=AXIS, tickColor=AXIS, labelColor=MUTED, titleColor=INK_2,
             labelFontSize=11, titleFontSize=11, titleFontWeight="normal",
         )
-        .configure_legend(labelColor=INK_2, titleColor=INK_2, orient="top", labelLimit=260)
+        .configure_legend(labelColor=INK_2, titleColor=INK_2, orient="bottom", columns=2, labelLimit=240, symbolType="stroke")
     )  # fmt: skip
 
 
