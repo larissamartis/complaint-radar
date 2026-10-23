@@ -89,8 +89,8 @@ def alert_item(rank: int, a: pd.Series, with_summary: bool = True) -> str:
     )
     return (
         f'<div class="cr-alert"><div class="cr-rank">{rank}</div><div class="cr-alert-body">'
-        f'<p class="cr-alert-title">{ui.safe(a["company"])}</p>'
-        f'<p class="cr-alert-issue">{ui.safe(a["issue"])} · {ui.safe(ui.short_product(a["product"]))}</p>'
+        f'<div class="cr-alert-title">{ui.safe(a["company"])}</div>'
+        f'<div class="cr-alert-issue">{ui.safe(a["issue"])} · {ui.safe(ui.short_product(a["product"]))}</div>'
         f'<div class="cr-badges">{ui.badge(f"{a['score']:.1f}× usual", "brand", "trending_up")}'
         f"{ui.badge(f'{ui.fmt_int(a["n"])} complaints', 'neutral')}"
         f"{ui.mapped_badge(a.get('pattern'), ui.PATTERN_BADGE)}</div>{summary}</div></div>"
@@ -350,7 +350,7 @@ def page_triage() -> None:
                 p = float(model.predict(row)[0])
                 pr = priority(p, model.metadata.get("reference_score_quantiles", []))
                 ui.html_block(f'<p class="cr-muted" style="margin:6px 0 4px 0">Relief probability</p>'
-                              f'<p class="cr-big">{p:.0%} &nbsp;{ui.mapped_badge(pr, ui.PRIORITY_BADGE)}</p>')  # fmt: skip
+                              f'<div class="cr-big">{p:.0%} &nbsp;{ui.mapped_badge(pr, ui.PRIORITY_BADGE)}</div>')  # fmt: skip
                 reasons = model.reasons(row)[0]
                 st.markdown("Main factors (positive pushes the score up):")
                 st.dataframe(

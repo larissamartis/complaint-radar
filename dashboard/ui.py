@@ -112,7 +112,7 @@ CSS = f"""
 
   .cr-highlight {{ background:#fff; border:1px solid {LINE}; border-radius:14px; padding:16px 18px; height:100%; }}
   .cr-highlight b {{ color:{BRAND}; font-size:1.5rem; font-weight:700; display:block; line-height:1.1; }}
-  .cr-highlight p {{ margin:6px 0 0 0; color:{INK_2}; font-size:0.84rem; line-height:1.4; }}
+  .cr-highlight .cr-hl-text {{ margin:6px 0 0 0; color:{INK_2}; font-size:0.84rem; line-height:1.4; }}
   .cr-muted {{ color:{MUTED}; font-size:0.8rem; }}
   .cr-big {{ color:{INK}; font-size:2.2rem; font-weight:700; line-height:1; margin:0; }}
   div[data-testid="stRadio"] > div {{ gap: 0.4rem; }}
@@ -166,8 +166,8 @@ def sidebar_status(status: str | None, updated: str) -> None:
 # ---------------------------------------------------------------- page structure
 def page_header(crumb: str, title: str, sub: str, right: str = "") -> None:
     html_block(
-        f'<div class="cr-page-head"><div><p class="cr-crumb">{html.escape(crumb)}</p>'
-        f'<p class="cr-title">{html.escape(title)}</p><p class="cr-sub">{html.escape(sub)}</p></div>'
+        f'<div class="cr-page-head"><div><div class="cr-crumb">{html.escape(crumb)}</div>'
+        f'<div class="cr-title">{html.escape(title)}</div><div class="cr-sub">{html.escape(sub)}</div></div>'
         f"<div>{right}</div></div>"
     )
 
@@ -182,7 +182,7 @@ def card(key: str):
 
 
 def card_head(title: str, icon_name: str, sub: str = "") -> None:
-    sub_html = f'<p class="cr-card-sub">{sub}</p>' if sub else '<div style="height:8px"></div>'
+    sub_html = f'<div class="cr-card-sub">{sub}</div>' if sub else '<div style="height:8px"></div>'
     html_block(
         f'<div class="cr-card-head"><div class="cr-card-title">{icon(icon_name)}<h4>{html.escape(title)}</h4></div>'
         f"</div>{sub_html}"
@@ -191,9 +191,9 @@ def card_head(title: str, icon_name: str, sub: str = "") -> None:
 
 def kpi(label: str, value: str, note: str, icon_name: str) -> str:
     return (
-        f'<div class="cr-kpi"><div class="cr-kpi-top"><p class="cr-kpi-label">{html.escape(label)}</p>'
+        f'<div class="cr-kpi"><div class="cr-kpi-top"><div class="cr-kpi-label">{html.escape(label)}</div>'
         f'<div class="cr-tile">{icon(icon_name)}</div></div>'
-        f'<p class="cr-kpi-value">{html.escape(value)}</p><p class="cr-kpi-note">{html.escape(note)}</p></div>'
+        f'<div class="cr-kpi-value">{html.escape(value)}</div><div class="cr-kpi-note">{html.escape(note)}</div></div>'
     )
 
 
@@ -204,7 +204,7 @@ def kpi_row(cards: list[str]) -> None:
 
 
 def highlight(value: str, text: str) -> str:
-    return f'<div class="cr-highlight"><b>{html.escape(value)}</b><p>{html.escape(text)}</p></div>'
+    return f'<div class="cr-highlight"><b>{html.escape(value)}</b><div class="cr-hl-text">{html.escape(text)}</div></div>'
 
 
 # ---------------------------------------------------------------- badges
