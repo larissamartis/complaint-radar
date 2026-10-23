@@ -180,16 +180,14 @@ def page_overview() -> None:
 
     st.write("")
     share = campaigns.get("summary", {}).get("share_template_amplified")
-    cols = st.columns(3)
-    for col, (value, text) in zip(cols, [
-        (f"{volume_rule.get('recall', 0):.0%}", "of 161 past incidents would have been flagged, a median "
-                                                 f"{ui.fmt_int(lead)} days before their peak (tested on 2022–26)."),
-        (f"{triage_best.get('lift_top10', 0):.1f}×", "more relief cases in the triage model's top 10% than at "
-                                                      "random (tested on 2025)."),
-        (f"{share:.0%}" if share is not None else "—", "of past incidents were mostly near-identical template "
-                                                       "complaints, not organic problems."),
-    ], strict=True):  # fmt: skip
-        col.markdown(ui.highlight(value, text), unsafe_allow_html=True)
+    ui.kpi_row([
+        ui.highlight(f"{volume_rule.get('recall', 0):.0%}", "of 161 past incidents would have been flagged, a "
+                     f"median {ui.fmt_int(lead)} days before their peak (tested on 2022–26)."),
+        ui.highlight(f"{triage_best.get('lift_top10', 0):.1f}×", "more relief cases in the triage model's top 10% "
+                     "than at random (tested on 2025)."),
+        ui.highlight(f"{share:.0%}" if share is not None else "—", "of past incidents were mostly near-identical "
+                     "template complaints, not organic problems."),
+    ])  # fmt: skip
 
 
 def page_alerts() -> None:

@@ -76,6 +76,7 @@ CSS = f"""
   .cr-card-title .cr-h4 {{ margin:0; font-size:1.0rem; font-weight:650; color:{INK}; }}
   .cr-card-sub {{ color:{MUTED}; font-size:0.82rem; margin:2px 0 10px 0; line-height:1.4; }}
 
+  .cr-grid {{ display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:14px; }}
   .cr-kpi {{ background:#fff; border:1px solid {LINE}; border-radius:14px; padding:16px 18px; height:100%;
              box-shadow:0 1px 2px rgba(16,24,40,0.05); }}
   .cr-kpi-top {{ display:flex; align-items:center; justify-content:space-between; }}
@@ -198,9 +199,8 @@ def kpi(label: str, value: str, note: str, icon_name: str) -> str:
 
 
 def kpi_row(cards: list[str]) -> None:
-    cols = st.columns(len(cards))
-    for col, c in zip(cols, cards, strict=True):
-        col.markdown(c, unsafe_allow_html=True)
+    """Cards in a responsive grid: one row on a laptop, two per row when the window is narrow."""
+    html_block(f'<div class="cr-grid">{"".join(cards)}</div>')
 
 
 def highlight(value: str, text: str) -> str:
