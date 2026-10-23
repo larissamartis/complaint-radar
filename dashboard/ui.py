@@ -204,7 +204,9 @@ def kpi_row(cards: list[str]) -> None:
 
 
 def highlight(value: str, text: str) -> str:
-    return f'<div class="cr-highlight"><b>{html.escape(value)}</b><div class="cr-hl-text">{html.escape(text)}</div></div>'
+    return (
+        f'<div class="cr-highlight"><b>{html.escape(value)}</b><div class="cr-hl-text">{html.escape(text)}</div></div>'
+    )
 
 
 # ---------------------------------------------------------------- badges
