@@ -78,3 +78,43 @@ def test_override_to_blank_rejects_a_wrong_automatic_match():
     actions = pd.DataFrame({"company": ["Capital One, N.A."], "url": ["u1"], "date_filed": ["2025-01-14"]})
     m = match_companies(actions, ["CAPITAL ONE FINANCIAL CORPORATION"], overrides={"u1": ""})
     assert m.loc[0, "match_method"] == "override" and accepted(m).empty
+
+
+COMPANIES = [  # (name, complaints) - larger companies are preferred when a rule finds several
+    ("AMERICAN EXPRESS COMPANY", 50000), ("U.S. BANCORP", 40000), ("REGIONS FINANCIAL CORPORATION", 20000),
+    ("Navient Solutions, LLC.", 40000), ("EQUIFAX, INC.", 4_000_000),
+    ("TRANSUNION INTERMEDIATE HOLDINGS, INC.", 4_500_000),
+    ("USAA Savings Bank", 30000), ("CITIZENS FINANCIAL GROUP, INC.", 15000), ("Citizens Business Bank", 50),
+    ("SYNCHRONY FINANCIAL", 85000), ("Paypal Holdings, Inc", 43000), ("Matthew Mortgage LLC", 20),
+]  # fmt: skip
+
+
+def match_one(name, url="u"):
+    actions = pd.DataFrame({"company": [name], "url": [url], "date_filed": ["2020-01-01"]})
+    return match_companies(actions, [c for c, _ in COMPANIES], volumes=dict(COMPANIES)).iloc[0]
+
+
+def test_brand_prefix_rules_match_banks_to_parent_names():
+    assert match_one("American Express Centurion Bank")["matched_company"] == "AMERICAN EXPRESS COMPANY"
+    assert match_one("Regions Bank")["matched_company"] == "REGIONS FINANCIAL CORPORATION"
+    assert match_one("Synchrony Bank, f/k/a GE Capital Retail Bank")["matched_company"] == "SYNCHRONY FINANCIAL"
+    assert match_one("Citizens Bank, N.A.")["matched_company"] == "CITIZENS FINANCIAL GROUP, INC."  # largest wins
+
+
+def test_multi_party_names_are_split():
+    m = match_one("Navient Corporation, Navient Solutions, Inc. and Pioneer Credit Recovery, Inc.")
+    assert m["matched_company"] == "Navient Solutions, LLC."
+    assert match_one("Equifax Inc. and Equifax Consumer Services LLC")["matched_company"] == "EQUIFAX, INC."
+    t = match_one("TransUnion; Trans Union, LLC; TransUnion Interactive, Inc.; and John T. Danaher")
+    assert t["matched_company"] == "TRANSUNION INTERMEDIATE HOLDINGS, INC."
+    assert match_one("PayPal, Inc. and Bill Me Later, Inc.")["matched_company"] == "Paypal Holdings, Inc"
+
+
+def test_distinctive_first_word_and_alias():
+    assert match_one("USAA Federal Savings Bank")["matched_company"] == "USAA Savings Bank"
+    assert match_one("U.S. Bank National Association")["matched_company"] == "U.S. BANCORP"
+
+
+def test_people_named_in_actions_are_not_matched_to_companies():
+    m = match_one("Castle & Cooke Mortgage, LLC; Matthew A. Pineda, individually; and Buck L. Hawkins")
+    assert m["matched_company"] != "Matthew Mortgage LLC"

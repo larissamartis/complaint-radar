@@ -241,8 +241,10 @@ def enforcement_cmd() -> None:
     actions.to_csv(data / "enforcement_actions.csv", index=False)
     overrides = pd.read_csv(data / "enforcement_overrides.csv", keep_default_na=False)
     con = duckdb.connect(str(config.duckdb_path()), read_only=True)
-    companies = [r[0] for r in con.execute("SELECT company FROM dim_company").fetchall()]
-    matches = match_companies(actions, companies, dict(zip(overrides["url"], overrides["company"], strict=True)))
+    volumes = dict(con.execute("SELECT company, n_complaints FROM dim_company").fetchall())
+    matches = match_companies(
+        actions, list(volumes), dict(zip(overrides["url"], overrides["company"], strict=True)), volumes=volumes
+    )
     matches.drop(columns="description").to_csv("docs/results/enforcement_matches.csv", index=False)
     used = accepted(matches).rename(columns={"company": "action_name", "matched_company": "company"})
 
