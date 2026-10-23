@@ -46,7 +46,7 @@ def test_alert_search_filters_rows(app):
     open_page(app, "alerts")
     app.text_input(key="alert_search").input("MOHELA").run()
     assert not app.exception
-    table = next(m.value for m in app.markdown if "cr-table" in m.value)
+    table = next(m.value for m in app.markdown if '<table class="cr-table"' in m.value)
     assert "MOHELA" in table and "AMERICAN HONDA" not in table
 
 
@@ -63,11 +63,11 @@ def test_tables_page_with_previous_and_next():
 
     at = AppTest.from_function(script, args=(str(ROOT / "dashboard"),), default_timeout=60)
     at.run()
-    page = next(m.value for m in at.markdown if "cr-table" in m.value)
+    page = next(m.value for m in at.markdown if '<table class="cr-table"' in m.value)
     assert page.count("<tr>") == 11 and "<td>9</td>" in page  # header + 10 rows
     assert at.button(key="t_prev").disabled
     at.button(key="t_next").click().run()
-    page = next(m.value for m in at.markdown if "cr-table" in m.value)
+    page = next(m.value for m in at.markdown if '<table class="cr-table"' in m.value)
     assert "<td>10</td>" in page and "<td>9</td>" not in page
     assert any("Showing 11–20 of 25" in m.value for m in at.markdown)
 
