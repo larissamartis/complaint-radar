@@ -14,64 +14,64 @@
     "min_complaints_12m": 50
   },
   "data": {
-    "actions_matched_and_used": 128,
-    "train_rows": 17421,
-    "train_positive_rows": 319,
-    "test_rows": 22255,
-    "test_positive_rows": 304,
-    "test_positive_companies": 28,
-    "test_base_rate": 0.013659851718714896
+    "actions_matched_and_used": 277,
+    "train_rows": 17146,
+    "train_positive_rows": 500,
+    "test_rows": 22070,
+    "test_positive_rows": 493,
+    "test_positive_companies": 45,
+    "test_base_rate": 0.022338015405527867
   },
   "test": {
     "baseline_volume_only": {
-      "roc_auc": 0.7731699520942578,
-      "pr_auc": 0.05741682251241281,
-      "precision_top1pct": 0.03139013452914798,
-      "lift_top1pct": 2.2979850129808828
+      "roc_auc": 0.8043386011003941,
+      "pr_auc": 0.13614945469521106,
+      "precision_top1pct": 0.2171945701357466,
+      "lift_top1pct": 9.723091608308168
     },
     "logistic_all_features": {
-      "roc_auc": 0.788571705161496,
-      "pr_auc": 0.059598209093178776,
-      "precision_top1pct": 0.08520179372197309,
-      "lift_top1pct": 6.237387892376681
+      "roc_auc": 0.7972315010132587,
+      "pr_auc": 0.11496861868136278,
+      "precision_top1pct": 0.17647058823529413,
+      "lift_top1pct": 7.900011931750388
     },
     "lightgbm_all_features": {
-      "roc_auc": 0.749842801790591,
-      "pr_auc": 0.035515243887032186,
-      "precision_top1pct": 0.03587443946188341,
-      "lift_top1pct": 2.626268586263866
+      "roc_auc": 0.7352499341713216,
+      "pr_auc": 0.059934385556723,
+      "precision_top1pct": 0.08144796380090498,
+      "lift_top1pct": 3.6461593531155634
     }
   },
   "best_pattern_model": "logistic_all_features",
   "gain_over_volume_pr_auc": {
-    "mean_diff": 0.002824034290154277,
+    "mean_diff": -0.02429367327351657,
     "ci95": [
-      -0.015556142328324831,
-      0.029407763520807467
+      -0.051314176306061485,
+      -0.00038942393763431824
     ],
-    "share_positive": 0.58,
+    "share_positive": 0.026,
     "resamples": 500
   },
   "logistic_standardised_coefficients": {
-    "log_volume_12m": 0.344,
-    "growth_3m_vs_prior": 0.005,
-    "relief_rate_12m": -0.345,
-    "untimely_rate_12m": -0.39,
-    "issue_shift_jsd": -0.415,
-    "n_issues_12m": 0.385,
-    "top_issue_share_12m": -0.067,
-    "log_months_active": -0.07,
-    "is_bureau": 0.002
+    "log_volume_12m": 0.615,
+    "growth_3m_vs_prior": 0.002,
+    "relief_rate_12m": -0.183,
+    "untimely_rate_12m": -0.295,
+    "issue_shift_jsd": -0.258,
+    "n_issues_12m": 0.232,
+    "top_issue_share_12m": 0.018,
+    "log_months_active": -0.168,
+    "is_bureau": 0.043
   },
   "lightgbm_gain_importance": {
-    "log_volume_12m": 0.247,
-    "growth_3m_vs_prior": 0.035,
-    "relief_rate_12m": 0.12,
-    "untimely_rate_12m": 0.001,
-    "issue_shift_jsd": 0.076,
-    "n_issues_12m": 0.221,
-    "top_issue_share_12m": 0.165,
-    "log_months_active": 0.134,
+    "log_volume_12m": 0.29,
+    "growth_3m_vs_prior": 0.041,
+    "relief_rate_12m": 0.106,
+    "untimely_rate_12m": 0.0,
+    "issue_shift_jsd": 0.078,
+    "n_issues_12m": 0.19,
+    "top_issue_share_12m": 0.149,
+    "log_months_active": 0.145,
     "is_bureau": 0.0
   }
 }
