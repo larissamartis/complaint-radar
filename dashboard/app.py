@@ -217,14 +217,15 @@ def page_alerts() -> None:
             view = view[view["pattern"] == ("cross_company_wave" if pattern.startswith("Cross") else "single_company")]
         view = view.sort_values(["week_start", "score"], ascending=[False, False])
         table = pd.DataFrame({
-            "Week": view["week_start"].dt.strftime("%d %b %Y"), "Company": view["company"],
-            "Product": view["product"].map(ui.short_product), "Issue": view["issue"],
-            "Complaints": view["n"].map(ui.fmt_int), "Expected": view["expected"].map(lambda x: f"{x:.1f}" if pd.notna(x) else "—"),
+            "Week": view["week_start"].dt.strftime("%d %b"), "Company": view["company"],
+            "Issue · product": [ui.two_line(i, ui.short_product(p)) for i, p in zip(view["issue"], view["product"], strict=True)],
+            "Complaints": [ui.two_line(ui.fmt_int(n), f"{e:.1f} expected" if pd.notna(e) else "")
+                           for n, e in zip(view["n"], view["expected"], strict=True)],
             "Ratio": view["score"].map(lambda s: ui.badge(f"{s:.1f}×", "brand")),
             "Pattern": view["pattern"].map(lambda p: ui.mapped_badge(p, ui.PATTERN_BADGE)),
         })  # fmt: skip
-        ui.html_table(table, key="alerts", reset_on=(q, str(week), pattern), html_cols=("Ratio", "Pattern"),
-                      num_cols=("Complaints", "Expected"))  # fmt: skip
+        ui.html_table(table, key="alerts", reset_on=(q, str(week), pattern),
+                      html_cols=("Issue · product", "Complaints", "Ratio", "Pattern"), num_cols=("Complaints",))  # fmt: skip
     if view.empty:
         return
     st.write("")
@@ -315,14 +316,17 @@ def page_triage() -> None:
             latest = triage_top[triage_top["as_of"] == triage_top["as_of"].max()]
             q = st.text_input("Search scored complaints", key="triage_search", placeholder="company, product or issue")
             latest = search(latest, q)
+            received = pd.to_datetime(latest["date_received"]).dt.strftime("%d %b %Y")
             table = pd.DataFrame({
-                "Received": pd.to_datetime(latest["date_received"]).dt.strftime("%d %b %Y"),
-                "Complaint ID": latest["complaint_id"].astype(str), "Company": latest["company"],
-                "Product · issue": latest["product"].map(ui.short_product) + " · " + latest["issue"].fillna("—"),
+                "Complaint": [ui.two_line(c, f"#{i} · received {d}")
+                              for c, i, d in zip(latest["company"], latest["complaint_id"], received, strict=True)],
+                "Issue · product": [ui.two_line(i, ui.short_product(p))
+                                    for i, p in zip(latest["issue"].fillna("—"), latest["product"], strict=True)],
                 "Relief probability": latest["relief_probability"].map(ui.prob_bar),
                 "Priority": latest["priority"].map(lambda p: ui.mapped_badge(p, ui.PRIORITY_BADGE)),
             })  # fmt: skip
-            ui.html_table(table, key="triage", reset_on=q, html_cols=("Relief probability", "Priority"))
+            ui.html_table(table, key="triage", reset_on=q,
+                          html_cols=("Complaint", "Issue · product", "Relief probability", "Priority"))  # fmt: skip
     with right, ui.card("score"):
         ui.card_head("Score a complaint", "calculate", "Try the model on a new complaint.")
         with st.form("score_form", border=False):

@@ -125,6 +125,7 @@ CSS = f"""
   .cr-table-wrap .cr-table tbody tr:hover td {{ background:#f8f8ff; }}
   .cr-table-wrap .cr-table .cr-num {{ text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }}
   .cr-table-wrap .cr-table td:first-child {{ white-space:nowrap; color:{INK_2}; }}
+  .cr-cell-sub {{ color:{MUTED}; font-size:0.78rem; margin-top:2px; white-space:normal; }}
   .cr-bar {{ display:inline-block; width:56px; height:6px; border-radius:3px; background:{GRID}; margin-right:8px;
              vertical-align:middle; overflow:hidden; }}
   .cr-bar span {{ display:block; height:100%; background:{BRAND}; border-radius:3px; }}
@@ -390,6 +391,11 @@ def grid_table(
                  height=35 * (len(rows) + 1) + 3)  # fmt: skip
     if key:
         _pager(df, rows, key, page, pages, page_size)
+
+
+def two_line(main, sub) -> str:
+    """A table cell with a main value and a smaller grey line under it (both escaped)."""
+    return f'{safe(main)}<div class="cr-cell-sub">{safe(sub)}</div>' if sub else safe(main)
 
 
 def prob_bar(p) -> str:
