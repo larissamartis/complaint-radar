@@ -3,7 +3,7 @@
   "design": {
     "train_months": [
       "2015-01-01",
-      "2019-12-01"
+      "2019-01-01"
     ],
     "test_months": [
       "2020-01-01",
@@ -14,64 +14,71 @@
     "min_complaints_12m": 50
   },
   "data": {
-    "actions_matched_and_used": 277,
-    "train_rows": 17146,
-    "train_positive_rows": 500,
-    "test_rows": 22070,
-    "test_positive_rows": 493,
-    "test_positive_companies": 45,
-    "test_base_rate": 0.022338015405527867
+    "actions_matched_and_used": 283,
+    "train_rows": 13639,
+    "train_positive_rows": 461,
+    "test_rows": 22069,
+    "test_positive_rows": 517,
+    "test_positive_companies": 47,
+    "test_base_rate": 0.023426525896053287,
+    "test_base_rate_by_year": {
+      "2020": 0.0205802132407637,
+      "2021": 0.01608695652173913,
+      "2022": 0.024858528698464027,
+      "2023": 0.021630282395353494,
+      "2024": 0.03690987124463519
+    }
   },
   "test": {
     "baseline_volume_only": {
-      "roc_auc": 0.8043386011003941,
-      "pr_auc": 0.13614945469521106,
-      "precision_top1pct": 0.2171945701357466,
-      "lift_top1pct": 9.723091608308168
+      "roc_auc": 0.8131486044638203,
+      "pr_auc": 0.15334591653952648,
+      "precision_top1pct": 0.2895927601809955,
+      "lift_top1pct": 12.361745888654525
     },
     "logistic_all_features": {
-      "roc_auc": 0.7972315010132587,
-      "pr_auc": 0.11496861868136278,
-      "precision_top1pct": 0.17647058823529413,
-      "lift_top1pct": 7.900011931750388
+      "roc_auc": 0.8210717742271313,
+      "pr_auc": 0.13655475906537867,
+      "precision_top1pct": 0.248868778280543,
+      "lift_top1pct": 10.623375373062482
     },
     "lightgbm_all_features": {
-      "roc_auc": 0.7352499341713216,
-      "pr_auc": 0.059934385556723,
-      "precision_top1pct": 0.08144796380090498,
-      "lift_top1pct": 3.6461593531155634
+      "roc_auc": 0.6993234571703866,
+      "pr_auc": 0.04771546128402024,
+      "precision_top1pct": 0.06787330316742081,
+      "lift_top1pct": 2.897284192653404
     }
   },
   "best_pattern_model": "logistic_all_features",
   "gain_over_volume_pr_auc": {
-    "mean_diff": -0.02429367327351657,
+    "mean_diff": -0.014904973473284656,
     "ci95": [
-      -0.051314176306061485,
-      -0.00038942393763431824
+      -0.04707056278997204,
+      0.008370337439503574
     ],
-    "share_positive": 0.026,
+    "share_positive": 0.162,
     "resamples": 500
   },
   "logistic_standardised_coefficients": {
-    "log_volume_12m": 0.615,
-    "growth_3m_vs_prior": 0.002,
-    "relief_rate_12m": -0.183,
-    "untimely_rate_12m": -0.295,
-    "issue_shift_jsd": -0.258,
-    "n_issues_12m": 0.232,
-    "top_issue_share_12m": 0.018,
-    "log_months_active": -0.168,
-    "is_bureau": 0.043
+    "log_volume_12m": 0.574,
+    "growth_3m_vs_prior": 0.017,
+    "relief_rate_12m": -0.189,
+    "untimely_rate_12m": -0.254,
+    "issue_shift_jsd": -0.301,
+    "n_issues_12m": 0.173,
+    "top_issue_share_12m": -0.243,
+    "log_months_active": -0.083,
+    "is_bureau": 0.108
   },
   "lightgbm_gain_importance": {
-    "log_volume_12m": 0.29,
-    "growth_3m_vs_prior": 0.041,
-    "relief_rate_12m": 0.106,
+    "log_volume_12m": 0.312,
+    "growth_3m_vs_prior": 0.037,
+    "relief_rate_12m": 0.097,
     "untimely_rate_12m": 0.0,
-    "issue_shift_jsd": 0.078,
-    "n_issues_12m": 0.19,
-    "top_issue_share_12m": 0.149,
-    "log_months_active": 0.145,
+    "issue_shift_jsd": 0.094,
+    "n_issues_12m": 0.189,
+    "top_issue_share_12m": 0.148,
+    "log_months_active": 0.123,
     "is_bureau": 0.0
   }
 }
