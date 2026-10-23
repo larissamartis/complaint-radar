@@ -20,14 +20,30 @@ def app(monkeypatch):
     return at
 
 
+PAGES = ["overview", "alerts", "trends", "triage", "research", "health", "about"]
+
+
+def open_page(at, slug):
+    at.button(key=f"nav_{slug}").click().run()
+    assert not at.exception, (slug, at.exception)
+    return at
+
+
 def test_dashboard_renders_without_errors(app):
     assert not app.exception, app.exception
-    assert len(app.tabs) == 7
+    assert [b.key for b in app.button if (b.key or "").startswith("nav_")] == [f"nav_{p}" for p in PAGES]
     text = " ".join(m.value for m in app.markdown)
     assert "Complaint Radar" in text and "AMERICAN HONDA FINANCE CORP" in text
 
 
+def test_every_page_renders(app):
+    for slug in PAGES:
+        open_page(app, slug)
+        assert app.session_state["page"] == slug
+
+
 def test_alert_search_filters_rows(app):
+    open_page(app, "alerts")
     app.text_input(key="alert_search").input("MOHELA").run()
     assert not app.exception
     table = app.dataframe[0].value
@@ -35,12 +51,14 @@ def test_alert_search_filters_rows(app):
 
 
 def test_research_sections_render(app):
+    open_page(app, "research")
     for section in ["Early-warning backtest", "Campaigns", "Topics", "Enforcement study"]:
         app.radio(key="research_section").set_value(section).run()
         assert not app.exception, (section, app.exception)
 
 
 def test_score_form_returns_probability(app):
+    open_page(app, "triage")
     next(b for b in app.button if b.label == "Score complaint").click().run()
     assert not app.exception
     text = " ".join(m.value for m in app.markdown)
@@ -59,6 +77,8 @@ def test_dashboard_renders_with_no_live_data(monkeypatch, tmp_path):
     at.run()
     assert not at.exception, at.exception
     assert any("not been published yet" in i.value for i in at.info)
+    for slug in PAGES:
+        open_page(at, slug)
     for section in ["Early-warning backtest", "Campaigns", "Topics", "Enforcement study"]:
         at.radio(key="research_section").set_value(section).run()
         assert not at.exception, (section, at.exception)
