@@ -49,6 +49,9 @@ def test_score_form_returns_probability(app):
 
 def test_dashboard_renders_with_no_live_data(monkeypatch, tmp_path):
     """Before the first serving export exists, every tab must still render (empty states, no errors)."""
+    import streamlit as st
+
+    st.cache_data.clear()  # the data cache is shared by every app run in this test process
     monkeypatch.setenv("CR_SERVING_DIR", str(tmp_path))  # empty folder
     monkeypatch.setenv("CR_RESULTS_DIR", str(ROOT / "docs" / "results"))
     monkeypatch.setenv("CR_OFFLINE", "1")
