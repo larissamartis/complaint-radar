@@ -95,8 +95,10 @@ PRIORITY_BADGE = {
 }
 
 
-def mapped_badge(value: str, mapping: dict) -> str:
-    text, kind, ic = mapping.get(value, (str(value), "neutral", None))
+def mapped_badge(value, mapping: dict) -> str:
+    if not isinstance(value, str) or not value:
+        return ""
+    text, kind, ic = mapping.get(value, (value.replace("_", " ").capitalize(), "neutral", None))
     return badge(text, kind, ic)
 
 
@@ -145,6 +147,23 @@ def bar_chart(df: pd.DataFrame, cat: str, val: str, tooltip: list, height: int =
         )
     )
     return _style(chart, height)
+
+
+SHORT_PRODUCT = {
+    "Credit reporting or other personal consumer reports": "Credit reporting",
+    "Credit reporting, credit repair services, or other personal consumer reports": "Credit reporting",
+    "Checking or savings account": "Checking or savings",
+    "Money transfer, virtual currency, or money service": "Money transfer / payment apps",
+    "Payday loan, title loan, personal loan, or advance loan": "Payday / personal loan",
+    "Payday loan, title loan, or personal loan": "Payday / personal loan",
+    "Vehicle loan or lease": "Vehicle loan",
+    "Credit card or prepaid card": "Credit or prepaid card",
+    "Debt or credit management": "Debt management",
+}
+
+
+def short_product(name) -> str:
+    return SHORT_PRODUCT.get(name, name) if isinstance(name, str) else "—"
 
 
 def fmt_int(x) -> str:

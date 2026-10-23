@@ -42,7 +42,8 @@ QUERIES = {
                api_latest_date, message
         FROM `{ds}.pipeline_runs` ORDER BY started_at DESC LIMIT 200
     """,
-    "drift": "SELECT as_of, metric, value, status, rows FROM `{ds}.drift_metrics` ORDER BY as_of DESC LIMIT 400",
+    # `rows` is a reserved word in BigQuery and must be quoted.
+    "drift": "SELECT as_of, metric, value, status, `rows` FROM `{ds}.drift_metrics` ORDER BY as_of DESC LIMIT 400",
     "triage_summary": """
         SELECT as_of, priority, count(*) AS complaints, avg(relief_probability) AS mean_probability,
                countif(already_closed) AS already_closed

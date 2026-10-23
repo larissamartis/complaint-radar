@@ -34,6 +34,23 @@ for df, cols in ((alerts, ["week_start", "as_of"]), (weekly, ["week_start"]), (s
         if c in df:
             df[c] = pd.to_datetime(df[c])
 
+# Alerts saved before pattern labelling existed have no pattern: apply the same rule here so every alert has one
+# (5+ companies with the same product + issue in the same week = a cross-company wave).
+if not alerts.empty:
+    waves = alerts.groupby(["week_start", "product", "issue"])["company"].transform("nunique")
+    missing = alerts["pattern"].isna()
+    alerts.loc[missing, "wave_companies"] = waves[missing]
+    alerts.loc[missing, "pattern"] = (waves[missing] >= 5).map({True: "cross_company_wave", False: "single_company"})
+
+
+def complete_weeks(df: pd.DataFrame) -> pd.DataFrame:
+    """Drop the first and current week: they are only partly inside the 60-day window and would dip to zero."""
+    if df.empty:
+        return df
+    weeks = sorted(df["week_start"].unique())
+    return df[df["week_start"].isin(weeks[1:-1])] if len(weeks) > 2 else df
+
+
 # ---------------------------------------------------------------- header
 last_run = runs.iloc[0] if not runs.empty else None
 status_html = (
@@ -92,7 +109,7 @@ with tabs[0]:
                f"{waves} in a cross-company wave", "notifications_active", ui.SERIES[1]),
         ui.kpi("High-priority complaints", ui.fmt_int(high), f"of {ui.fmt_int(scored)} scored in the last run",
                "priority_high", ui.SERIES[6]),
-        ui.kpi("Last pipeline run", last_run["status"].replace("_", " ").title() if last_run is not None else "—",
+        ui.kpi("Last pipeline run", last_run["status"].replace("_", " ").capitalize() if last_run is not None else "—",
                f"{last_run['as_of']:%d %b %Y}" if last_run is not None else "no runs recorded", "sync", ui.SERIES[2]),
     ])  # fmt: skip
     st.write("")
@@ -108,7 +125,7 @@ with tabs[0]:
         for _, a in week_alerts.sort_values("score", ascending=False).head(5).iterrows():
             with st.container(border=True):
                 st.markdown(
-                    f"**{a['company']}** · {a['issue']}<br><span class='cr-muted'>{a['product']}</span><br>"
+                    f"**{a['company']}** · {a['issue']}<br><span class='cr-muted'>{ui.short_product(a['product'])}</span><br>"
                     f"{ui.mapped_badge(a.get('pattern'), ui.PATTERN_BADGE)} "
                     f"{ui.badge(f'{a["score"]:.1f}× usual', 'warning', 'trending_up')} "
                     f"{ui.badge(f'{int(a["n"])} complaints', 'neutral')}",
@@ -121,7 +138,8 @@ with tabs[0]:
         if weekly.empty:
             st.info("Weekly volume appears after the first pipeline run.")
         else:
-            other = weekly[weekly["segment"] == "other"]
+            other = complete_weeks(weekly[weekly["segment"] == "other"])
+            other = other.assign(product=other["product"].map(ui.short_product))
             top = other.groupby("product")["complaints"].sum().nlargest(4).index.tolist()
             other = other.assign(product=other["product"].where(other["product"].isin(top), "Other products"))
             plot = other.groupby(["week_start", "product"], as_index=False)["complaints"].sum()
@@ -167,7 +185,7 @@ with tabs[1]:
             view = view[view["pattern"] == ("cross_company_wave" if pattern.startswith("Cross") else "single_company")]
         view = view.sort_values(["week_start", "score"], ascending=[False, False])
         table = pd.DataFrame({
-            "Week": view["week_start"].dt.date, "Company": view["company"], "Product": view["product"],
+            "Week": view["week_start"].dt.date, "Company": view["company"], "Product": view["product"].map(ui.short_product),
             "Issue": view["issue"], "Complaints": view["n"].astype(int), "Expected": view["expected"].round(1),
             "Ratio": view["score"].round(1),
             "Pattern": view["pattern"].map({"cross_company_wave": "Cross-company wave", "single_company": "Single company"}),
@@ -217,7 +235,7 @@ with tabs[2]:
         company = c1.selectbox("Company", sorted(series["company"].unique()), key="trend_company")
         sub = series[series["company"] == company]
         issue = c2.selectbox("Issue", sorted(sub["issue"].unique()), key="trend_issue")
-        plot = sub[sub["issue"] == issue].groupby("week_start", as_index=False)["complaints"].sum()
+        plot = complete_weeks(sub[sub["issue"] == issue]).groupby("week_start", as_index=False)["complaints"].sum()
         st.altair_chart(
             ui.line_chart(plot, "week_start", "complaints", None, ["week_start:T", ui.tip("complaints")],
                           y_title="Complaints per week"),
@@ -255,12 +273,12 @@ with tabs[3]:
                 lambda s: s.str.contains(q, case=False, na=False)).any(axis=1)]  # fmt: skip
         table = pd.DataFrame({
             "Complaint ID": latest["complaint_id"], "Received": pd.to_datetime(latest["date_received"]).dt.date,
-            "Company": latest["company"], "Product": latest["product"], "Issue": latest["issue"],
+            "Company": latest["company"], "Product": latest["product"].map(ui.short_product), "Issue": latest["issue"],
             "Relief probability": latest["relief_probability"], "Priority": latest["priority"].str.title(),
             "Status": latest["company_response"].fillna("—"),
         })  # fmt: skip
         st.dataframe(ui.paginate(table, key="triage_page"), hide_index=True, use_container_width=True,
-                     column_config={"Relief probability": st.column_config.ProgressColumn(format="%.0f%%", min_value=0,
+                     column_config={"Relief probability": st.column_config.ProgressColumn(format="percent", min_value=0,
                                                                                           max_value=1)})  # fmt: skip
         st.caption("Public CFPB complaints are published after the company responds, so many are already closed when "
                    "scored; inside a bank this model would score at intake.")  # fmt: skip
@@ -321,6 +339,12 @@ with tabs[4]:
             st.caption("Test period 2022 – May 2026, non-bureau companies. The simple volume rule was not beaten.")
         named = pd.DataFrame(bt.get("named_incidents", []))
         if not named.empty and "volume_rule_lead_days" in named:
+            named = named.assign(
+                peak_week=named["peak_week"].fillna("not an incident"),
+                volume_rule_lead_days=named["volume_rule_lead_days"]
+                .astype("object")
+                .where(named["volume_rule_lead_days"].notna(), "—"),
+            )
             st.markdown("**Named incidents**")
             st.dataframe(named[["company", "issue", "month", "peak_week", "volume_rule_lead_days"]].rename(columns={
                 "company": "Company", "issue": "Issue", "month": "Month", "peak_week": "Peak week",
@@ -348,7 +372,7 @@ with tabs[4]:
             st.dataframe(top[["start_month", "company", "issue", "complaints", "near_dup_share"]].rename(columns={
                 "start_month": "Start", "company": "Company", "issue": "Issue", "complaints": "Complaints",
                 "near_dup_share": "Near-duplicate share"}), hide_index=True, use_container_width=True,
-                column_config={"Near-duplicate share": st.column_config.ProgressColumn(format="%.0f%%", min_value=0,
+                column_config={"Near-duplicate share": st.column_config.ProgressColumn(format="percent", min_value=0,
                                                                                         max_value=1)})  # fmt: skip
     elif section == "Topics":
         ui.panel_head("What complaints are about (archived narratives)", "category")
@@ -391,8 +415,8 @@ with tabs[5]:
             st.info("No runs recorded yet.")
         else:
             st.dataframe(pd.DataFrame({
-                "Date": runs["as_of"].dt.date, "Status": runs["status"].str.replace("_", " ").str.title(),
-                "Step": runs["step"], "Rows loaded": runs["rows_loaded"], "Message": runs["message"],
+                "Date": runs["as_of"].dt.date, "Status": runs["status"].str.replace("_", " ").str.capitalize(),
+                "Step": runs["step"], "Rows loaded": runs["rows_loaded"], "Message": runs["message"].fillna("—"),
             }).head(30), hide_index=True, use_container_width=True)  # fmt: skip
     with right:
         ui.panel_head("Model drift (Population Stability Index)", "monitor_heart")
