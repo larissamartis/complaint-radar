@@ -48,6 +48,13 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+if not meta:
+    st.info(
+        "Live data has not been published yet. The daily pipeline publishes it after its next run (11:30 UTC); "
+        "research results below are already available.",
+        icon=":material/schedule:",
+    )
+
 tabs = st.tabs([
     ":material/dashboard: Overview",
     ":material/notifications_active: Alerts",
@@ -75,11 +82,11 @@ with tabs[0]:
     )
     scored = int(latest_triage["complaints"].sum()) if latest_triage is not None else None
     ui.kpi_row([
-        ui.kpi("Complaints in the last 60 days", ui.fmt_int(window_total), "all companies, as published so far",
+        ui.kpi("Complaints, last 60 days", ui.fmt_int(window_total), "all companies, published so far",
                "inbox", ui.SERIES[0]),
-        ui.kpi("Alerts in the latest week", ui.fmt_int(len(week_alerts)),
-               f"{waves} part of a cross-company wave", "notifications_active", ui.SERIES[1]),
-        ui.kpi("High-priority complaints", ui.fmt_int(high), f"of {ui.fmt_int(scored)} scored in the latest run",
+        ui.kpi("Alerts this week", ui.fmt_int(len(week_alerts)),
+               f"{waves} in a cross-company wave", "notifications_active", ui.SERIES[1]),
+        ui.kpi("High-priority complaints", ui.fmt_int(high), f"of {ui.fmt_int(scored)} scored in the last run",
                "priority_high", ui.SERIES[6]),
         ui.kpi("Last pipeline run", last_run["status"].replace("_", " ").title() if last_run is not None else "—",
                f"{last_run['as_of']:%d %b %Y}" if last_run is not None else "no runs recorded", "sync", ui.SERIES[2]),

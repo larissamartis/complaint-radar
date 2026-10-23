@@ -14,6 +14,7 @@ ROOT = Path(__file__).parents[2]
 def app(monkeypatch):
     monkeypatch.setenv("CR_SERVING_DIR", str(ROOT / "tests" / "fixtures" / "serving"))
     monkeypatch.setenv("CR_RESULTS_DIR", str(ROOT / "docs" / "results"))
+    monkeypatch.setenv("CR_OFFLINE", "1")
     at = AppTest.from_file(str(ROOT / "dashboard" / "app.py"), default_timeout=120)
     at.run()
     return at
@@ -44,3 +45,17 @@ def test_score_form_returns_probability(app):
     assert not app.exception
     text = " ".join(m.value for m in app.markdown)
     assert "Relief probability" in text or any("unavailable" in w.value for w in app.warning)
+
+
+def test_dashboard_renders_with_no_live_data(monkeypatch, tmp_path):
+    """Before the first serving export exists, every tab must still render (empty states, no errors)."""
+    monkeypatch.setenv("CR_SERVING_DIR", str(tmp_path))  # empty folder
+    monkeypatch.setenv("CR_RESULTS_DIR", str(ROOT / "docs" / "results"))
+    monkeypatch.setenv("CR_OFFLINE", "1")
+    at = AppTest.from_file(str(ROOT / "dashboard" / "app.py"), default_timeout=120)
+    at.run()
+    assert not at.exception, at.exception
+    assert any("not been published yet" in i.value for i in at.info)
+    for section in ["Early-warning backtest", "Campaigns", "Topics", "Enforcement study"]:
+        at.radio(key="research_section").set_value(section).run()
+        assert not at.exception, (section, at.exception)

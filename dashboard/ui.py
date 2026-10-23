@@ -15,7 +15,7 @@ INK, INK_2, MUTED, GRID, AXIS = "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3
 CSS = f"""
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,0,0" rel="stylesheet">
 <style>
-  .block-container {{ padding-top: 1.6rem; max-width: 1280px; }}
+  .block-container {{ padding-top: 3.4rem; max-width: 1280px; }}
   .cr-header {{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
                margin-bottom: 0.8rem; }}
   .cr-title {{ font-size: 1.35rem; font-weight: 650; color: {INK}; margin:0; }}
