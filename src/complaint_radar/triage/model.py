@@ -42,7 +42,9 @@ def priority(p: float, quantiles: list[float]) -> str:
 def _as_categories(frame: pd.DataFrame, categories: dict[str, list[str]]) -> pd.DataFrame:
     out = frame.copy()
     for col in CATEGORICAL:
-        out[col] = pd.Categorical(out[col], categories=categories[col])
+        cats = categories[col]
+        # Values never seen in training become missing explicitly (pandas will stop doing this implicitly).
+        out[col] = pd.Categorical(out[col].where(out[col].isin(cats)), categories=cats)
     return out
 
 

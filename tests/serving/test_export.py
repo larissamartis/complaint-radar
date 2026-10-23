@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import date
 
 from complaint_radar.serving.export import QUERIES, export_serving
@@ -40,4 +41,4 @@ def test_failed_query_writes_empty_file_and_continues(tmp_path):
 def test_queries_are_read_only_and_target_the_dataset():
     for sql in QUERIES.values():
         upper = sql.upper()
-        assert "{DS}" in upper and not any(k in upper for k in ("INSERT", "UPDATE", "DELETE", "MERGE", "CREATE"))
+        assert "{DS}" in upper and not re.search(r"\b(INSERT|UPDATE|DELETE|MERGE|CREATE|DROP)\b", upper)
