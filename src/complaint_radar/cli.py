@@ -256,3 +256,15 @@ def enforcement_cmd() -> None:
     for name, m in res["test"].items():
         typer.echo(f"{name:24} ROC-AUC {m['roc_auc']:.3f}  PR-AUC {m['pr_auc']:.3f}  lift@1% {m['lift_top1pct']:.1f}")
     typer.echo(f"gain over volume (PR-AUC): {res['gain_over_volume_pr_auc']}")
+
+
+@app.command("export-serving")
+def export_serving_cmd(out: Path = typer.Option(Path("data/serving"), help="Folder for the dashboard files")) -> None:
+    """Export small JSON files for the dashboard from BigQuery (alerts, trends, runs, drift, triage)."""
+    from google.cloud import bigquery
+
+    from complaint_radar.serving.export import export_serving
+
+    project = os.environ.get("CR_BQ_PROJECT", "complaint-radar-512308")
+    counts = export_serving(bigquery.Client(project=project), project, out)
+    typer.echo(f"exported to {out}: {counts}")
