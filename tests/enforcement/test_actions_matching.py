@@ -143,6 +143,34 @@ def test_generic_single_word_never_drives_a_prefix_match():
     assert m.loc[0, "matched_company"] is None or m.loc[0, "match_method"] in ("review", "none")
 
 
+def test_shared_brand_word_with_a_different_business_is_not_accepted():
+    # Wrong matches seen in a real run: same first word, different firm.
+    companies = {
+        "MORGAN STANLEY & CO. LLC": 1284, "Rocket Mortgage, LLC": 9605, "Phoenix Financial Services LLC": 2913,
+        "American Debt Services, LLC": 4, "Certified Services, Inc.": 61, "Conduent Incorporated": 2398,
+        "WELLS FARGO & COMPANY": 176909, "JPMORGAN CHASE & CO.": 178410, "SUNTRUST BANKS, INC.": 9634,
+    }  # fmt: skip
+    names = {
+        "m": "Morgan Drexen, Inc. and Walter Ledda",
+        "r": "Rocket Homes Real Estate LLC, dba Rocket Homes",
+        "p": "Phoenix Title Loans, LLC",
+        "a": "American Debt Settlement Solutions, Inc.,and Michael DiPanni",
+        "c": "Certified Forensic Loan Auditors, LLC, Andrew Lehman, and Michael Carr",
+        "k": "Conduent Business Services, LLC",
+        "w": "Wells Fargo Bank, N.A.",
+        "j": "JPMorgan Chase Bank, N.A.",
+        "s": "SunTrust Mortgage, Inc.",
+    }
+    actions = pd.DataFrame({"company": list(names.values()), "url": list(names), "date_filed": ["2016-01-01"] * 9})
+    used = accepted(match_companies(actions, list(companies), volumes=companies)).set_index("url")["matched_company"]
+    assert used.to_dict() == {
+        "k": "Conduent Incorporated",
+        "w": "WELLS FARGO & COMPANY",
+        "j": "JPMORGAN CHASE & CO.",
+        "s": "SUNTRUST BANKS, INC.",
+    }
+
+
 def test_every_matched_party_is_labelled():
     companies = {"Navient Solutions, LLC.": 40000, "Pioneer Credit Recovery, Inc.": 3000}
     name = "Navient Corporation, Navient Solutions, Inc. and Pioneer Credit Recovery, Inc."

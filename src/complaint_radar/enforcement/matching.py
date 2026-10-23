@@ -7,12 +7,16 @@ rules from strictest to loosest:
 
   override     a reviewed mapping (action URL -> complaint company; blank = reject), always wins
   exact        identical after normalisation (lowercase, punctuation and legal suffixes removed)
-  alias        a short documented list of known name differences (e.g. "U.S. Bank" -> "U.S. Bancorp")
-  prefix       one name is a word-prefix of the other (same brand); only for parties that look like companies
-  first_token  a distinctive first word shared by both (e.g. "USAA"), only when one company holds >= 90% of
-               that brand's complaints (otherwise "review"); only for company-like parties
+  alias        a short documented list of known brand names (e.g. "U.S. Bank" -> "U.S. Bancorp"); the alias may
+               be followed by any words ("American Express Centurion Bank")
+  prefix       one name is a word-prefix of the other, and the extra words are only institution words
+               ("Regions" + "Bank") or the shared part is two+ words with a distinctive one ("Colony Ridge")
+  first_token  a distinctive first word shared by both, the rest of both names only institution words
+               ("SunTrust Mortgage" vs "SunTrust Banks"), and one company holds >= 90% of that brand's complaints
   fuzzy        close spelling within the same first word (similarity >= 0.90); 0.80-0.90 is flagged "review"
 
+A shared distinctive first word that fails these checks is flagged "review", never accepted: "Rocket Homes Real
+Estate" is not "Rocket Mortgage", and "Phoenix Title Loans" is not "Phoenix Financial Services".
 When a rule finds several companies, the one with the most complaints wins. People named in actions do not look
 like companies (no legal or business words), so the brand rules never apply to them.
 """
@@ -35,9 +39,17 @@ _SUFFIXES = {
 # Normalised action name -> normalised complaint name, for brands whose names differ beyond the rules above.
 ALIASES = {
     "u s bank": "u s bancorp",
-    "chase bank": "jpmorgan chase and",
-    "chase": "jpmorgan chase and",
+    "chase": "jpmorgan chase",
+    "american express": "american express",
 }
+# Words that describe the kind of institution rather than the brand ("SunTrust" + "Mortgage").
+_INSTITUTION_WORDS = {
+    "bank", "banks", "bankshares", "bancorp", "mortgage", "savings", "federal", "national", "fsb", "f", "s", "b",
+    "interactive", "intermediate", "rental", "screening", "solutions", "consumer", "trust", "card", "cards",
+    "bankcard", "servicing", "insurance", "loan", "loans", "lending", "finance", "credit", "payment", "payments",
+    "systems", "worldwide", "technologies", "digital", "acceptance", "funding", "automotive", "business",
+    "education", "and", "of", "america",
+}  # fmt: skip
 _GENERIC_FIRST = {
     "first", "american", "national", "united", "citizens", "community", "bank", "new", "great", "southern",
     "northern", "western", "eastern", "central", "capital", "credit", "home", "u", "global", "premier", "pacific",
@@ -64,7 +76,7 @@ def normalize(name: str) -> str:
     name = _DBA.split(name)[0]  # keep the legal name before any "d/b/a ..."
     name = name.lower().replace("&", " and ")
     tokens = re.findall(r"[a-z0-9]+", name)
-    while tokens and tokens[-1] in _SUFFIXES:
+    while tokens and (tokens[-1] in _SUFFIXES or tokens[-1] == "and"):  # "Wells Fargo & Company" -> "wells fargo"
         tokens.pop()
     tokens = [t for t in tokens if t != "the"]
     return " ".join(tokens)
@@ -90,6 +102,25 @@ def _brand_like(norm: str) -> bool:
     return len(words) >= 2 or (len(norm) >= 5 and norm not in _GENERIC_FIRST)
 
 
+def _institution_only(words: list[str]) -> bool:
+    return all(w in _INSTITUTION_WORDS for w in words)
+
+
+def _same_brand_prefix(short: str, long: str) -> bool:
+    """`short` is a word-prefix of `long` and the difference is not a different business."""
+    if not _is_word_prefix(short, long) or not (_brand_like(short) and _brand_like(long)):
+        return False
+    shared, extra = short.split(), long.split()[len(short.split()) :]
+    return _institution_only(extra) or (len(shared) >= 2 and any(w not in _GENERIC_FIRST for w in shared))
+
+
+def _alias(n: str) -> str | None:
+    for key, target in ALIASES.items():
+        if _is_word_prefix(key, n):
+            return target
+    return None
+
+
 class _Index:
     def __init__(self, companies: list[str], volumes: dict[str, float]):
         self.by_norm: dict[str, str] = {}
@@ -107,23 +138,23 @@ class _Index:
     def match(self, n: str, company_like: bool) -> tuple[str | None, float, str]:
         if n in self.by_norm:
             return n, 1.0, "exact"
-        if n in ALIASES and ALIASES[n] in self.by_norm:
-            return ALIASES[n], 1.0, "alias"
+        target = _alias(n)
+        if target in self.by_norm:
+            return target, 1.0, "alias"
         first = n.split()[0]
         if company_like:
-            cands = [
-                c for c in self.by_first.get(first, [])
-                if (_is_word_prefix(c, n) or _is_word_prefix(n, c)) and _brand_like(c) and _brand_like(n)
-            ]  # fmt: skip
+            same_first = self.by_first.get(first, [])
+            cands = [c for c in same_first if _same_brand_prefix(c, n) or _same_brand_prefix(n, c)]
             if cands:
                 return self.biggest(cands), 0.95, "prefix"
-            same_first = self.by_first.get(first, [])
             if len(first) >= 4 and first not in _GENERIC_FIRST and same_first:
-                top = self.biggest(same_first)
+                rest = n.split()[1:]
+                brand = [c for c in same_first if _institution_only(rest) and _institution_only(c.split()[1:])]
+                top = self.biggest(brand or same_first)
                 total = sum(self.volume.get(c, 0) for c in same_first)
                 # Only accept when one company clearly owns the brand ("TransUnion"); with several sizeable
                 # companies sharing the word ("Freedom Mortgage" vs "Freedom Financial") send it to review.
-                if total == 0 or self.volume.get(top, 0) >= DOMINANT_SHARE * total:
+                if brand and (total == 0 or self.volume.get(top, 0) >= DOMINANT_SHARE * total):
                     return top, 0.9, "first_token"
                 return top, 0.85, "review"
         best, score = None, 0.0
