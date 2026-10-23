@@ -41,7 +41,8 @@ CSS = f"""
   section[data-testid="stSidebar"] .stButton {{ margin-bottom:-10px; }}
   section[data-testid="stSidebar"] .stButton button {{ justify-content:flex-start; border:none; border-radius:9px;
       padding:8px 12px; min-height:40px; width:100%; box-shadow:none; }}
-  section[data-testid="stSidebar"] .stButton button p {{ font-size:0.9rem; font-weight:520; }}
+  section[data-testid="stSidebar"] .stButton button > div {{ justify-content:flex-start; width:100%; gap:10px; }}
+  section[data-testid="stSidebar"] .stButton button p {{ font-size:0.9rem; font-weight:520; text-align:left; }}
   section[data-testid="stSidebar"] button[data-testid="stBaseButton-tertiary"] {{ background:transparent; }}
   section[data-testid="stSidebar"] button[data-testid="stBaseButton-tertiary"] p,
   section[data-testid="stSidebar"] button[data-testid="stBaseButton-tertiary"] span {{ color:#c7d2fe !important; }}
@@ -128,7 +129,8 @@ def safe(text) -> str:
 
 
 def inject_css() -> None:
-    st.markdown(CSS, unsafe_allow_html=True)
+    # A blank line would end the HTML block in Streamlit's markdown and print the rest of the CSS as text.
+    st.markdown("\n".join(line for line in CSS.splitlines() if line.strip()), unsafe_allow_html=True)
 
 
 def icon(name: str) -> str:

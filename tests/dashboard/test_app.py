@@ -57,6 +57,12 @@ def test_research_sections_render(app):
         assert not app.exception, (section, app.exception)
 
 
+def test_styles_are_one_html_block(app):
+    # A blank line inside the injected <style> would make Streamlit print the remaining CSS as page text.
+    css = next(m.value for m in app.markdown if "<style>" in m.value)
+    assert "\n\n" not in css and css.strip().endswith("</style>")
+
+
 def test_score_form_returns_probability(app):
     open_page(app, "triage")
     next(b for b in app.button if b.label == "Score complaint").click().run()
