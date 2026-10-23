@@ -48,6 +48,10 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+if st.button("Refresh data", icon=":material/refresh:", type="tertiary", key="refresh"):
+    st.cache_data.clear()
+    st.rerun()
+
 if not meta:
     st.info(
         "Live data has not been published yet. The daily pipeline publishes it after its next run (11:30 UTC); "

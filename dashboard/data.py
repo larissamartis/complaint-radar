@@ -51,7 +51,7 @@ COLUMNS = {
 }  # fmt: skip
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
+@st.cache_data(ttl=900, show_spinner=False)
 def serving(name: str) -> pd.DataFrame:
     rows = _read_json(name, "CR_SERVING_DIR", SERVING_URL)
     df = pd.DataFrame(rows or [])
@@ -61,12 +61,12 @@ def serving(name: str) -> pd.DataFrame:
     return df
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
+@st.cache_data(ttl=900, show_spinner=False)
 def serving_meta() -> dict:
     return _read_json("meta", "CR_SERVING_DIR", SERVING_URL) or {}
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
+@st.cache_data(ttl=900, show_spinner=False)
 def result(name: str) -> dict:
     """Research results; read from the repo checkout when available (Streamlit Cloud deploys the repo)."""
     return _read_json(name, "CR_RESULTS_DIR", RESULTS_URL, default_dir=ROOT / "docs" / "results") or {}
