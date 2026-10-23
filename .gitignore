@@ -23,3 +23,5 @@ gcp-*.json
 !tests/fixtures/**
 dbt/.user.yml
 !dbt/seeds/*.csv
+!src/complaint_radar/data/*.csv
+!docs/results/*.csv

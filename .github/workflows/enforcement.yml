@@ -1,0 +1,58 @@
+name: Enforcement study
+
+# Scrapes CFPB enforcement actions, matches them to complaint companies and runs the early-warning study.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: enforcement
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.3.0
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Set paths
+        run: |
+          echo "CR_DATA_DIR=$RUNNER_TEMP/data" >> "$GITHUB_ENV"
+          echo "CR_LAKE_DIR=$RUNNER_TEMP/data/lake" >> "$GITHUB_ENV"
+          echo "CR_DUCKDB_PATH=$RUNNER_TEMP/data/lake/complaint_radar.duckdb" >> "$GITHUB_ENV"
+
+      - name: Download and load the narratives archive (21 files, ~1.4 GB)
+        run: |
+          uv run complaint-radar download-archive
+          uv run complaint-radar backfill-archive
+          rm -rf "$CR_DATA_DIR/raw"
+
+      - name: Build local models (dbt on DuckDB)
+        run: uv run dbt build --project-dir dbt --profiles-dir dbt
+
+      - name: Run the enforcement early-warning study
+        run: uv run complaint-radar enforcement
+
+      - name: Commit outputs
+        run: |
+          ls -la src/complaint_radar/data docs/results
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/complaint_radar/data/enforcement_actions.csv docs/results/enforcement_matches.csv docs/results/enforcement.json
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git commit -m "Update enforcement study results"
+          git pull --rebase
+          git push

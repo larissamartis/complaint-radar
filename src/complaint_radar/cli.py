@@ -223,3 +223,36 @@ def train_triage_cmd() -> None:
             f"{name:30} ROC-AUC {m['roc_auc']:.3f}  PR-AUC {m['pr_auc']:.3f}  "
             f"lift@10% {m['lift_top10']:.2f}  Brier {m['brier']:.4f}"
         )
+
+
+@app.command("enforcement")
+def enforcement_cmd() -> None:
+    """Scrape CFPB enforcement actions, match them to complaint companies and run the early-warning study."""
+    import duckdb
+    import pandas as pd
+
+    from complaint_radar.enforcement.actions import scrape_actions
+    from complaint_radar.enforcement.matching import accepted, match_companies
+    from complaint_radar.enforcement.panel import MONTHLY_SQL, build_panel
+    from complaint_radar.enforcement.study import TEST, TRAIN, run_study
+
+    data = Path(__file__).resolve().parent / "data"
+    actions = scrape_actions()
+    actions.to_csv(data / "enforcement_actions.csv", index=False)
+    overrides = pd.read_csv(data / "enforcement_overrides.csv", keep_default_na=False)
+    con = duckdb.connect(str(config.duckdb_path()), read_only=True)
+    companies = [r[0] for r in con.execute("SELECT company FROM dim_company").fetchall()]
+    matches = match_companies(actions, companies, dict(zip(overrides["url"], overrides["company"], strict=True)))
+    matches.drop(columns="description").to_csv("docs/results/enforcement_matches.csv", index=False)
+    used = accepted(matches).rename(columns={"company": "action_name", "matched_company": "company"})
+
+    monthly = con.execute(MONTHLY_SQL).df()
+    panel = build_panel(monthly, used[["company", "date_filed"]], TRAIN[0][:7], TEST[1][:7])
+    res = run_study(panel, actions_used=len(used), out_path=Path("docs/results/enforcement.json"))
+    typer.echo(
+        f"actions scraped {len(actions)}, matched and used {len(used)}; match methods "
+        f"{matches['match_method'].value_counts().to_dict()}"
+    )
+    for name, m in res["test"].items():
+        typer.echo(f"{name:24} ROC-AUC {m['roc_auc']:.3f}  PR-AUC {m['pr_auc']:.3f}  lift@1% {m['lift_top1pct']:.1f}")
+    typer.echo(f"gain over volume (PR-AUC): {res['gain_over_volume_pr_auc']}")
