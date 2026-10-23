@@ -82,20 +82,24 @@ def not_published_notice() -> None:
         )
 
 
-def alert_item(rank: int, a: pd.Series, with_summary: bool = True) -> str:
+def alert_item(rank: int | None, a: pd.Series, with_summary: bool = True, extra: str = "") -> str:
     summary = (
         f"<div class='cr-summary'>{ui.safe(a['summary'])}</div>"
         if with_summary and isinstance(a.get("summary"), str)
         else ""
     )
+    rank_html = f'<div class="cr-rank">{rank}</div>' if rank is not None else ""
     return (
-        f'<div class="cr-alert"><div class="cr-rank">{rank}</div><div class="cr-alert-body">'
+        f'<div class="cr-alert">{rank_html}<div class="cr-alert-body">'
         f'<div class="cr-alert-title">{ui.safe(a["company"])}</div>'
         f'<div class="cr-alert-issue">{ui.safe(a["issue"])} · {ui.safe(ui.short_product(a["product"]))}</div>'
         f'<div class="cr-badges">{ui.badge(f"{a['score']:.1f}× usual", "brand", "trending_up")}'
         f"{ui.badge(f'{ui.fmt_int(a["n"])} complaints', 'neutral')}"
-        f"{ui.mapped_badge(a.get('pattern'), ui.PATTERN_BADGE)}</div>{summary}</div></div>"
+        f"{ui.mapped_badge(a.get('pattern'), ui.PATTERN_BADGE)}{extra}</div>{summary}</div></div>"
     )
+
+
+PATTERN_TEXT = {"cross_company_wave": "Cross-company wave", "single_company": "Single company"}
 
 
 # ---------------------------------------------------------------- pages
@@ -213,16 +217,14 @@ def page_alerts() -> None:
             view = view[view["pattern"] == ("cross_company_wave" if pattern.startswith("Cross") else "single_company")]
         view = view.sort_values(["week_start", "score"], ascending=[False, False])
         table = pd.DataFrame({
-            "Week": view["week_start"].dt.date, "Company": view["company"], "Product": view["product"].map(ui.short_product),
-            "Issue": view["issue"], "Complaints": view["n"].astype(int), "Expected": view["expected"].round(1),
-            "Ratio": view["score"].round(1),
-            "Pattern": view["pattern"].map({"cross_company_wave": "Cross-company wave", "single_company": "Single company"}),
+            "Week": view["week_start"].dt.strftime("%d %b %Y"), "Company": view["company"],
+            "Product": view["product"].map(ui.short_product), "Issue": view["issue"],
+            "Complaints": view["n"].map(ui.fmt_int), "Expected": view["expected"].map(lambda x: f"{x:.1f}" if pd.notna(x) else "—"),
+            "Ratio": view["score"].map(lambda s: ui.badge(f"{s:.1f}×", "brand")),
+            "Pattern": view["pattern"].map(lambda p: ui.mapped_badge(p, ui.PATTERN_BADGE)),
         })  # fmt: skip
-        page = ui.paginate(table.reset_index(drop=True), key="alert_page")
-        st.dataframe(page, hide_index=True, use_container_width=True, column_config={
-            "Ratio": st.column_config.NumberColumn(format="%.1f×"),
-            "Issue": st.column_config.TextColumn(width="large"),
-        })  # fmt: skip
+        ui.html_table(table, key="alerts", reset_on=(q, str(week), pattern), html_cols=("Ratio", "Pattern"),
+                      num_cols=("Complaints", "Expected"))  # fmt: skip
     if view.empty:
         return
     st.write("")
@@ -232,10 +234,10 @@ def page_alerts() -> None:
         pick = st.selectbox("Alert", range(len(labels)), format_func=lambda i: labels[i], key="alert_pick")
         a = view.iloc[pick]
         published = a["completeness"] if pd.notna(a["completeness"]) else 1
-        ui.html_block(
-            alert_item(1, a, with_summary=False).replace('<div class="cr-rank">1</div>', "")
-            + f'<div class="cr-badges">{ui.badge(f"week {ui.fmt_int(a["week_age"])} ago · {published:.0%} published", "neutral", "schedule")}</div>'
-        )  # fmt: skip
+        extra = (
+            ui.badge(f"expected {a['expected']:.1f}", "neutral", "functions") if pd.notna(a["expected"]) else ""
+        ) + ui.badge(f"week {ui.fmt_int(a['week_age'])} ago · {published:.0%} published", "neutral", "schedule")
+        ui.html_block(alert_item(None, a, with_summary=False, extra=extra))
         if isinstance(a.get("summary"), str):
             method = (
                 "written by a local language model, numbers checked" if a.get("summary_method") == "llm" else "template"
@@ -245,10 +247,9 @@ def page_alerts() -> None:
         topics = json.loads(a["typical_topics"]) if isinstance(a.get("typical_topics"), str) else []
         if topics:
             st.markdown("**What customers usually describe for this product and issue** (archived complaints)")
-            st.dataframe(
-                pd.DataFrame([{"Topic": t["label"], "Share": t["share"]} for t in topics]),
-                hide_index=True, use_container_width=True,
-                column_config={"Share": st.column_config.ProgressColumn(format="percent", min_value=0, max_value=1)},
+            ui.html_table(
+                pd.DataFrame([{"Topic": t["label"], "Share of complaints": ui.prob_bar(t["share"])} for t in topics]),
+                key="alert_topics", reset_on=pick, html_cols=("Share of complaints",),
             )  # fmt: skip
 
 
@@ -315,14 +316,13 @@ def page_triage() -> None:
             q = st.text_input("Search scored complaints", key="triage_search", placeholder="company, product or issue")
             latest = search(latest, q)
             table = pd.DataFrame({
-                "Complaint ID": latest["complaint_id"], "Received": pd.to_datetime(latest["date_received"]).dt.date,
-                "Company": latest["company"], "Product": latest["product"].map(ui.short_product), "Issue": latest["issue"],
-                "Relief probability": latest["relief_probability"], "Priority": latest["priority"].str.title(),
-                "Status": latest["company_response"].fillna("—"),
+                "Received": pd.to_datetime(latest["date_received"]).dt.strftime("%d %b %Y"),
+                "Complaint ID": latest["complaint_id"].astype(str), "Company": latest["company"],
+                "Product · issue": latest["product"].map(ui.short_product) + " · " + latest["issue"].fillna("—"),
+                "Relief probability": latest["relief_probability"].map(ui.prob_bar),
+                "Priority": latest["priority"].map(lambda p: ui.mapped_badge(p, ui.PRIORITY_BADGE)),
             })  # fmt: skip
-            st.dataframe(ui.paginate(table, key="triage_page"), hide_index=True, use_container_width=True,
-                         column_config={"Relief probability": st.column_config.ProgressColumn(
-                             format="percent", min_value=0, max_value=1)})  # fmt: skip
+            ui.html_table(table, key="triage", reset_on=q, html_cols=("Relief probability", "Priority"))
     with right, ui.card("score"):
         ui.card_head("Score a complaint", "calculate", "Try the model on a new complaint.")
         with st.form("score_form", border=False):
@@ -352,10 +352,9 @@ def page_triage() -> None:
                               f'<div class="cr-big">{p:.0%} &nbsp;{ui.mapped_badge(pr, ui.PRIORITY_BADGE)}</div>')  # fmt: skip
                 reasons = model.reasons(row)[0]
                 st.markdown("Main factors (positive pushes the score up):")
-                st.dataframe(
-                    pd.DataFrame(reasons).rename(columns={"feature": "Factor", "value": "Value", "effect": "Effect"}),
-                    hide_index=True, use_container_width=True,
-                )  # fmt: skip
+                ui.grid_table(
+                    pd.DataFrame(reasons).rename(columns={"feature": "Factor", "value": "Value", "effect": "Effect"})
+                )
             except Exception as exc:  # model not packaged in this deployment
                 st.warning(f"Scoring is unavailable here ({type(exc).__name__}).")
     if perf:
@@ -367,11 +366,11 @@ def page_triage() -> None:
                 "logistic_regression_fields": "Logistic regression",
                 "lightgbm_fields_calibrated": "LightGBM (in use)",
             }
-            st.dataframe(pd.DataFrame([
+            ui.grid_table(pd.DataFrame([
                 {"Model": names.get(k, k), "ROC-AUC": round(m["roc_auc"], 3), "PR-AUC": round(m["pr_auc"], 3),
                  "Relief rate in top 10%": f"{m['precision_top10']:.0%}", "Lift vs random": f"{m['lift_top10']:.1f}×"}
                 for k, m in perf.items()
-            ]), hide_index=True, use_container_width=True)  # fmt: skip
+            ]))  # fmt: skip
 
 
 def page_research() -> None:
@@ -390,13 +389,13 @@ def page_research() -> None:
                     "robust_z": "Robust z-score",
                     "nb_surprise": "Negative-binomial surprise",
                 }
-                st.dataframe(pd.DataFrame([
+                ui.grid_table(pd.DataFrame([
                     {"Detector": nice.get(k, k), "Incidents caught": f"{v['test']['recall']:.0%}",
                      "Caught ≥14 days before peak": f"{v['test'].get('share_caught_14d_early', float('nan')):.0%}",
                      "Median warning (days)": v["test"]["median_lead_days"],
                      "False alarms per 100 series-months": round(v["test"]["false_alarms_per_100_series_months"], 1)}
                     for k, v in dets.items()
-                ]), hide_index=True, use_container_width=True)  # fmt: skip
+                ]))  # fmt: skip
             named = pd.DataFrame(backtest.get("named_incidents", []))
             if not named.empty and "volume_rule_lead_days" in named:
                 named = named.assign(
@@ -406,9 +405,10 @@ def page_research() -> None:
                     .where(named["volume_rule_lead_days"].notna(), "—"),
                 )
                 st.markdown("**Named incidents**")
-                st.dataframe(named[["company", "issue", "month", "peak_week", "volume_rule_lead_days"]].rename(columns={
+                ui.html_table(named[["company", "issue", "month", "peak_week", "volume_rule_lead_days"]].rename(columns={
                     "company": "Company", "issue": "Issue", "month": "Month", "peak_week": "Peak week",
-                    "volume_rule_lead_days": "Alert before peak (days)"}), hide_index=True, use_container_width=True)  # fmt: skip
+                    "volume_rule_lead_days": "Alert before peak (days)"}), key="named",
+                    num_cols=("Alert before peak (days)",))  # fmt: skip
     elif section == "Campaigns":
         with ui.card("campaigns"):
             ui.card_head("Template and campaign-driven complaint waves", "content_copy")
@@ -428,11 +428,12 @@ def page_research() -> None:
                     tooltip=[alt.Tooltip("year:O", title="Year"), "Type:N", alt.Tooltip("size:Q", title="Incidents")])  # fmt: skip
                 st.altair_chart(ui._style(chart, 260), use_container_width=True)
                 top = inc[inc["label"] == "template_amplified"].sort_values("complaints", ascending=False)
-                st.dataframe(top[["start_month", "company", "issue", "complaints", "near_dup_share"]].rename(columns={
-                    "start_month": "Start", "company": "Company", "issue": "Issue", "complaints": "Complaints",
-                    "near_dup_share": "Near-duplicate share"}), hide_index=True, use_container_width=True,
-                    column_config={"Near-duplicate share": st.column_config.ProgressColumn(
-                        format="percent", min_value=0, max_value=1)})  # fmt: skip
+                st.markdown("**Template-amplified incidents**, largest first")
+                ui.html_table(pd.DataFrame({
+                    "Start": top["start_month"], "Company": top["company"], "Issue": top["issue"],
+                    "Complaints": top["complaints"].map(ui.fmt_int),
+                    "Near-duplicate share": top["near_dup_share"].map(ui.prob_bar),
+                }), key="campaigns", html_cols=("Near-duplicate share",), num_cols=("Complaints",))  # fmt: skip
     elif section == "Topics":
         with ui.card("topics"):
             ui.card_head("What complaints are about (archived narratives)", "category")
@@ -461,11 +462,11 @@ def page_research() -> None:
                 names = {"baseline_volume_only": "Complaint volume only (baseline)",
                          "logistic_all_features": "Logistic regression, all patterns",
                          "lightgbm_all_features": "LightGBM, all patterns"}  # fmt: skip
-                st.dataframe(pd.DataFrame([
+                ui.grid_table(pd.DataFrame([
                     {"Model": names.get(k, k), "ROC-AUC": round(m["roc_auc"], 3),
                      "PR-AUC": round(m["pr_auc"], 3), "Lift in top 1%": f"{m['lift_top1pct']:.1f}×"}
                     for k, m in enf.get("test", {}).items()
-                ]), hide_index=True, use_container_width=True)  # fmt: skip
+                ]))  # fmt: skip
                 g = enf.get("gain_over_volume_pr_auc", {})
                 if g:
                     lo, hi = g["ci95"]
@@ -485,10 +486,11 @@ def page_health() -> None:
         if runs.empty:
             st.info("No runs recorded yet.")
         else:
-            st.dataframe(pd.DataFrame({
-                "Date": runs["as_of"].dt.date, "Status": runs["status"].str.replace("_", " ").str.capitalize(),
-                "Step": runs["step"], "Rows loaded": runs["rows_loaded"], "Message": runs["message"].fillna("—"),
-            }).head(30), hide_index=True, use_container_width=True)  # fmt: skip
+            ui.html_table(pd.DataFrame({
+                "Date": runs["as_of"].dt.strftime("%d %b %Y"),
+                "Status": runs["status"].map(lambda s: ui.mapped_badge(s, ui.RUN_BADGE)),
+                "Rows loaded": runs["rows_loaded"].map(ui.fmt_int), "Message": runs["message"].fillna("—"),
+            }), key="runs", page_size=8, html_cols=("Status",), num_cols=("Rows loaded",))  # fmt: skip
     with right, ui.card("drift"):
         ui.card_head("Model drift (Population Stability Index)", "monitor_heart",
                      "Below 0.10 = stable, 0.10–0.25 = moderate shift, above 0.25 = significant shift.")  # fmt: skip

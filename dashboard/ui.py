@@ -67,7 +67,7 @@ CSS = f"""
               border-radius:999px; padding:5px 12px; font-size:0.8rem; color:{INK_2}; white-space:nowrap; }}
   .cr-chip .material-symbols-rounded {{ font-size:16px; color:{BRAND}; }}
 
-  div[class*="st-key-card"] {{ background:#fff; border:1px solid {LINE}; border-radius:14px; padding:18px 20px 14px 20px;
+  div[class*="st-key-card"] {{ background:#fff; border:1px solid {LINE}; border-radius:14px; padding:18px 20px 22px 20px;
       box-shadow:0 1px 2px rgba(16,24,40,0.05); }}
   .cr-card-head {{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:2px; }}
   .cr-card-title {{ display:flex; align-items:center; gap:8px; }}
@@ -115,6 +115,19 @@ CSS = f"""
   .cr-highlight b {{ color:{BRAND}; font-size:1.5rem; font-weight:700; display:block; line-height:1.1; }}
   .cr-highlight .cr-hl-text {{ margin:6px 0 0 0; color:{INK_2}; font-size:0.84rem; line-height:1.4; }}
   .cr-muted {{ color:{MUTED}; font-size:0.8rem; }}
+  .cr-table-wrap {{ overflow-x:auto; border:1px solid {LINE}; border-radius:10px; margin:4px 0 10px 0; }}
+  .cr-table-wrap .cr-table {{ width:100%; border-collapse:collapse; font-size:0.86rem; margin:0; border:none; }}
+  .cr-table-wrap .cr-table th {{ background:#f9fafb; color:{INK_2}; font-weight:600; font-size:0.78rem; text-align:left;
+      padding:10px 12px; border:none; border-bottom:1px solid {LINE}; white-space:nowrap; }}
+  .cr-table-wrap .cr-table td {{ padding:10px 12px; border:none; border-bottom:1px solid {GRID}; color:{INK};
+      vertical-align:top; line-height:1.4; }}
+  .cr-table-wrap .cr-table tr:last-child td {{ border-bottom:none; }}
+  .cr-table-wrap .cr-table tbody tr:hover td {{ background:#f8f8ff; }}
+  .cr-table-wrap .cr-table .cr-num {{ text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }}
+  .cr-table-wrap .cr-table td:first-child {{ white-space:nowrap; color:{INK_2}; }}
+  .cr-bar {{ display:inline-block; width:56px; height:6px; border-radius:3px; background:{GRID}; margin-right:8px;
+             vertical-align:middle; overflow:hidden; }}
+  .cr-bar span {{ display:block; height:100%; background:{BRAND}; border-radius:3px; }}
   .cr-big {{ color:{INK}; font-size:2.2rem; font-weight:700; line-height:1; margin:0; }}
   div[data-testid="stRadio"] > div {{ gap: 0.4rem; }}
 </style>
@@ -319,11 +332,69 @@ def fmt_int(x) -> str:
         return "—"
 
 
-def paginate(df: pd.DataFrame, key: str, page_size: int = 25) -> pd.DataFrame:
-    """Simple pager below long tables."""
+# ---------------------------------------------------------------- tables
+def _set_page(state: str, page: int) -> None:
+    st.session_state[state] = page
+
+
+def _page(df: pd.DataFrame, key: str, page_size: int, reset_on) -> tuple[pd.DataFrame, int, int]:
+    """The rows of the current page. `reset_on` (e.g. the search text) returns to page 1 when it changes."""
+    state, sig = f"{key}_page", f"{key}_filters"
+    if st.session_state.get(sig) != reset_on:
+        st.session_state[sig], st.session_state[state] = reset_on, 0
     pages = max(1, -(-len(df) // page_size))
-    c1, c2 = st.columns([1, 3])
-    page = c1.number_input("Page", min_value=1, max_value=pages, value=1, step=1, key=key)
-    c2.markdown(f'<p class="cr-muted" style="margin-top:2.1rem">{len(df):,} rows · page {page} of {pages}</p>',
-                unsafe_allow_html=True)  # fmt: skip
-    return df.iloc[(page - 1) * page_size : page * page_size]
+    page = min(st.session_state.get(state, 0), pages - 1)
+    return df.iloc[page * page_size : (page + 1) * page_size], page, pages
+
+
+def _pager(df: pd.DataFrame, rows: pd.DataFrame, key: str, page: int, pages: int, page_size: int) -> None:
+    if pages <= 1:
+        return
+    first = page * page_size + 1
+    c1, c2, c3 = st.columns([5, 1.2, 1.2], vertical_alignment="center")
+    c1.markdown(f'<span class="cr-muted">Showing {first:,}–{first + len(rows) - 1:,} of {len(df):,} · '
+                f"page {page + 1} of {pages}</span>", unsafe_allow_html=True)  # fmt: skip
+    state = f"{key}_page"
+    c2.button("Previous", key=f"{key}_prev", icon=":material/chevron_left:", disabled=page == 0,
+              on_click=_set_page, args=(state, page - 1), use_container_width=True)  # fmt: skip
+    c3.button("Next", key=f"{key}_next", icon=":material/chevron_right:", disabled=page >= pages - 1,
+              on_click=_set_page, args=(state, page + 1), use_container_width=True)  # fmt: skip
+
+
+def html_table(df: pd.DataFrame, key: str, page_size: int = 10, reset_on=None, html_cols: tuple = (),
+               num_cols: tuple = ()) -> None:  # fmt: skip
+    """A paged table whose text wraps instead of being cut off. Cells are escaped except `html_cols` (which the
+    caller builds from escaped parts, e.g. badges); `num_cols` are right-aligned."""
+    if df.empty:
+        st.info("No rows match.", icon=":material/search_off:")
+        return
+    rows, page, pages = _page(df.reset_index(drop=True), key, page_size, reset_on)
+
+    def cell(col, value) -> str:
+        cls = ' class="cr-num"' if col in num_cols else ""
+        return f"<td{cls}>{value if col in html_cols else safe(value)}</td>"
+
+    head = "".join(f"<th{' class=cr-num' if c in num_cols else ''}>{html.escape(c)}</th>" for c in rows.columns)
+    body = "".join("<tr>" + "".join(cell(c, v) for c, v in r.items()) + "</tr>" for _, r in rows.iterrows())
+    html_block(f'<div class="cr-table-wrap"><table class="cr-table"><thead><tr>{head}</tr></thead>'
+               f"<tbody>{body}</tbody></table></div>")  # fmt: skip
+    _pager(df, rows, key, page, pages, page_size)
+
+
+def grid_table(
+    df: pd.DataFrame, key: str | None = None, page_size: int = 10, column_config: dict | None = None
+) -> None:
+    """A Streamlit grid sized to its rows (no scrolling inside the table), paged when longer than `page_size`."""
+    rows, page, pages = _page(df.reset_index(drop=True), key or "grid", page_size, None) if key else (df, 0, 1)
+    st.dataframe(rows, hide_index=True, use_container_width=True, column_config=column_config,
+                 height=35 * (len(rows) + 1) + 3)  # fmt: skip
+    if key:
+        _pager(df, rows, key, page, pages, page_size)
+
+
+def prob_bar(p) -> str:
+    if p is None or p != p:
+        return "—"
+    return (
+        f'<div class="cr-bar"><span style="width:{max(0.0, min(1.0, float(p))) * 100:.0f}%"></span></div>{float(p):.0%}'
+    )

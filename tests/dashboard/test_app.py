@@ -46,8 +46,30 @@ def test_alert_search_filters_rows(app):
     open_page(app, "alerts")
     app.text_input(key="alert_search").input("MOHELA").run()
     assert not app.exception
-    table = app.dataframe[0].value
-    assert list(table["Company"]) == ["MOHELA"]
+    table = next(m.value for m in app.markdown if "cr-table" in m.value)
+    assert "MOHELA" in table and "AMERICAN HONDA" not in table
+
+
+def test_tables_page_with_previous_and_next():
+    def script(dashboard_dir):
+        import sys
+
+        import pandas as pd
+
+        sys.path.insert(0, dashboard_dir)
+        import ui
+
+        ui.html_table(pd.DataFrame({"n": range(25)}), key="t")
+
+    at = AppTest.from_function(script, args=(str(ROOT / "dashboard"),), default_timeout=60)
+    at.run()
+    page = next(m.value for m in at.markdown if "cr-table" in m.value)
+    assert page.count("<tr>") == 11 and "<td>9</td>" in page  # header + 10 rows
+    assert at.button(key="t_prev").disabled
+    at.button(key="t_next").click().run()
+    page = next(m.value for m in at.markdown if "cr-table" in m.value)
+    assert "<td>10</td>" in page and "<td>9</td>" not in page
+    assert any("Showing 11–20 of 25" in m.value for m in at.markdown)
 
 
 def test_research_sections_render(app):
