@@ -31,9 +31,8 @@ jobs:
       - name: Report failing tests
         if: failure()
         run: |
-          grep -E "^(FAILED|ERROR) |^E  |Error:" "$RUNNER_TEMP/pytest.txt" | head -20 | while IFS= read -r line; do
-            echo "::error title=pytest::${line//$'\n'/ }"
-          done
+          { grep -E "^(FAILED|ERROR) |^E  |Error" "$RUNNER_TEMP/pytest.txt" | head -15; tail -n 8 "$RUNNER_TEMP/pytest.txt"; } \
+            | while IFS= read -r line; do echo "::error title=pytest::${line}"; done
 
       - name: dbt build on fixture lake
         env:
