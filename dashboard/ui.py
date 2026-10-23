@@ -73,7 +73,7 @@ CSS = f"""
   .cr-card-title {{ display:flex; align-items:center; gap:8px; }}
   .cr-card-title .material-symbols-rounded {{ color:{BRAND}; font-size:20px; background:{BRAND_SOFT};
       border-radius:8px; padding:5px; }}
-  .cr-card-title h4 {{ margin:0; font-size:1.0rem; font-weight:650; color:{INK}; }}
+  .cr-card-title .cr-h4 {{ margin:0; font-size:1.0rem; font-weight:650; color:{INK}; }}
   .cr-card-sub {{ color:{MUTED}; font-size:0.82rem; margin:2px 0 10px 0; line-height:1.4; }}
 
   .cr-kpi {{ background:#fff; border:1px solid {LINE}; border-radius:14px; padding:16px 18px; height:100%;
@@ -88,7 +88,7 @@ CSS = f"""
 
   .cr-hero {{ background:{BRAND}; border-radius:16px; padding:20px 24px; color:#fff; display:flex;
               align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap; margin-bottom:1rem; }}
-  .cr-hero h3 {{ color:#fff; margin:0; font-size:1.2rem; font-weight:700; }}
+  .cr-hero .cr-hero-title {{ color:#fff; margin:0; font-size:1.2rem; font-weight:700; }}
   .cr-hero p {{ color:#e0e7ff; margin:4px 0 0 0; font-size:0.9rem; }}
   .cr-hero-stats {{ display:flex; gap:28px; }}
   .cr-hero-stat b {{ display:block; font-size:1.5rem; font-weight:700; color:#fff; line-height:1.1; }}
@@ -184,7 +184,7 @@ def card(key: str):
 def card_head(title: str, icon_name: str, sub: str = "") -> None:
     sub_html = f'<div class="cr-card-sub">{sub}</div>' if sub else '<div style="height:8px"></div>'
     html_block(
-        f'<div class="cr-card-head"><div class="cr-card-title">{icon(icon_name)}<h4>{html.escape(title)}</h4></div>'
+        f'<div class="cr-card-head"><div class="cr-card-title">{icon(icon_name)}<div class="cr-h4">{html.escape(title)}</div></div>'
         f"</div>{sub_html}"
     )
 

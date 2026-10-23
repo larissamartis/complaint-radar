@@ -8,6 +8,7 @@ from pathlib import Path
 import altair as alt
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -113,7 +114,7 @@ def page_overview() -> None:
     )
     lead = volume_rule.get("median_lead_days")
     ui.html_block(
-        f'<div class="cr-hero"><div><h3>{ui.safe(headline)}</h3>'
+        f'<div class="cr-hero"><div><div class="cr-hero-title">{ui.safe(headline)}</div>'
         f"<p>{n_waves} of them are part of a cross-company wave (the same issue rising at 5+ companies). "
         f"Alerts are ranked by how far complaints are above their usual level.</p></div>"
         f'<div class="cr-hero-stats">'
@@ -576,6 +577,7 @@ PAGES = {
 
 def go_to(slug: str) -> None:
     st.session_state["page"] = slug
+    st.session_state["scroll_top"] = True
     st.query_params["page"] = slug
 
 
@@ -596,3 +598,12 @@ if st.sidebar.button("Refresh data", icon=":material/refresh:", type="tertiary",
     st.rerun()
 
 PAGES[st.session_state["page"]][2]()
+
+if st.session_state.pop("scroll_top", False):
+    # A new page opens at the top, not at the previous page's scroll position.
+    components.html(
+        "<script>const d = window.parent.document;"
+        'd.querySelectorAll(\'[data-testid="stMain"], [data-testid="stAppViewContainer"], section.main\')'
+        ".forEach(e => e.scrollTo(0, 0)); window.parent.scrollTo(0, 0);</script>",
+        height=0,
+    )
