@@ -1,0 +1,13 @@
+{
+  "exported_at": "2026-11-21T18:13:34.106731+00:00",
+  "rows": {
+    "alerts": 197,
+    "weekly_volume": 172,
+    "top_series": 2492,
+    "pipeline_runs": 43,
+    "drift": 52,
+    "triage_summary": 78,
+    "triage_top": 5200,
+    "vintages": 698
+  }
+}
